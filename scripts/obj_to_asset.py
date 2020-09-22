@@ -34,7 +34,7 @@ def float_to_hex(f):
 
 
 
-def replace_color(vertex_num,new_color):
+def get_color(vertex_num,new_color):
 
 
     return "63aacsff"
@@ -427,12 +427,12 @@ if error_flag == 0:
                 if vertex_decode=="NORM":
                     #print("Writing Normal: " + str(vertex_pointer)+" Loop: " + str(loop_count))
                     #print("X RAW: " + str(obj_normal_array[vertex_pointer*3])+ " X CALC: "+ str(float_to_hex(obj_normal_array[vertex_pointer*3])))
-                    #new_asset.write(str(float_to_hex(obj_normal_array[vertex_pointer*3])))
-                    #new_asset.write(str(float_to_hex(obj_normal_array[vertex_pointer*3+1])))
-                    #new_asset.write(str(float_to_hex(obj_normal_array[vertex_pointer*3+2])))
-                    new_asset.write("00000000")
-                    new_asset.write("00000000")
-                    new_asset.write("00000000")
+                    new_asset.write(str(float_to_hex(obj_normal_array[vertex_pointer*3])))
+                    new_asset.write(str(float_to_hex(obj_normal_array[vertex_pointer*3+1])))
+                    new_asset.write(str(float_to_hex(obj_normal_array[vertex_pointer*3+2])))
+                    #new_asset.write("00000000")
+                    #new_asset.write("00000000")
+                    #new_asset.write("00000000")
                     vertex_decode="UV"
 
                 #write "Other" data
