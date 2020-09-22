@@ -1,6 +1,6 @@
 #Object PreProcessor
 major=0
-minor=1
+minor=2
 
 import sys
 from colorama import Fore, Back, Style, init
@@ -135,11 +135,11 @@ obj_vertex_array= np.zeros((obj_vertex_count_preprocess)*3, dtype=float)
 obj_vertex_count=0
 
 #Normals
-obj_normal_array= np.zeros((obj_normal_count_preprocess)*3, dtype=float)
+obj_normal_array= np.zeros((obj_vertex_count_preprocess+3)*3, dtype=float)
 obj_normal_count=0
 
 #Regenerated
-new_obj_normal_array= np.zeros((obj_vertex_count_preprocess)*3, dtype=float)
+new_obj_normal_array= np.zeros((obj_vertex_count_preprocess+3)*3, dtype=float)
 new_obj_normal_count=0
 
 
@@ -169,8 +169,8 @@ print("Reading Object File...")
 OBJECT_LINE = object_file.readlines()
 for line in OBJECT_LINE: 
     #check for Errors
-    if fail_flag == 0:
-
+    if fail_flag == 0 and " " in line:
+        #print(line)
         #Find Object name
         if  object_name_flag == 0 and ("g " in line.split()[0] or "o" in line.split()[0]):
             obj_g1=str(line.split(" ", maxsplit=1)[1].strip()).split(".")[0]
@@ -189,22 +189,22 @@ for line in OBJECT_LINE:
 
 
         #Collect Normals
-        elif "vn " in line: 
-           # print(str(obj_normal_count))
+        elif "vn" in line.split()[0]: 
+            #print(str(obj_normal_count)+ line)
             obj_normal_array[obj_normal_count*3]=float(str(line.split()[1]))
             obj_normal_array[obj_normal_count*3+1]=float(str(line.split()[2]))
             obj_normal_array[obj_normal_count*3+2]=float(str(line.split()[3]))
             obj_normal_count+=1
 
         #collect UV
-        elif "vt " in line:
+        elif "vt" in line.split()[0]:
             #print(str(obj_uv_count))
             obj_uv_array[obj_uv_count*2]=float(str(line.split()[1]))
             obj_uv_array[obj_uv_count*2+1]=float(str(line.split()[2]))
             obj_uv_count+=1
 
         #collect Faces
-        elif "f " in line:
+        elif "f" in line.split()[0]:
             if len(line.split()) > 4 :
                 new_face_1=line.split()[1]+" "+line.split()[2]+" "+line.split()[3]
                 new_face_2=line.split()[1]+" "+line.split()[3]+" "+line.split()[4]
@@ -217,7 +217,7 @@ for line in OBJECT_LINE:
 
 
 face_temp_file.close()
-
+debug_count=0
 
 face_temp_file = open("preprocess_temp.txt", "r")
 new_face_temp_file = open("face_temp.txt", "w")
@@ -235,27 +235,38 @@ for line in FACE_LINE:
         v3=line.split()[2]
 
 #VERTEX 1
-
-
+        #print(str(debug_count)+" V1: " + str(v1) + " V2: " + str(v2) + " V3: " + str(v3))
+        debug_count+=1
+        
         if len(v1.split("/")) > 2:
+
             if v1.split("/")[0] == v1.split("/")[2]:
                 # OK to copy current entry to new normal buffer
-                new_obj_normal_array[int(v1.split("/")[0])]=obj_normal_array[int(v1.split("/")[0])]
+                new_obj_normal_array[int(v1.split("/")[0])*3]=obj_normal_array[int(v1.split("/")[0])*3]
+                new_obj_normal_array[int(v1.split("/")[0])*3+1]=obj_normal_array[int(v1.split("/")[0])*3+1]
+                new_obj_normal_array[int(v1.split("/")[0])*3+2]=obj_normal_array[int(v1.split("/")[0])*3+2]
+                
             elif v1.split("/")[0] != v1.split("/")[2]:
                 #Move entry to new buffer
-                if new_obj_normal_array[int(v1.split("/")[0])] != 0 and new_obj_normal_array[int(v1.split("/")[0])] != obj_normal_array[int(v1.split("/")[2])]:
+                if new_obj_normal_array[int(v1.split("/")[0])*3] != 0 and new_obj_normal_array[int(v1.split("/")[0])*3] != obj_normal_array[int(v1.split("/")[2])*3]:
                     print("COPY ERROR: "+Fore.RED + "Face Buffer not empty" +Style.RESET_ALL)                               
-                new_obj_normal_array[int(v1.split("/")[0])]=obj_normal_array[int(v1.split("/")[2])]
+                new_obj_normal_array[int(v1.split("/")[0])*3]=obj_normal_array[int(v1.split("/")[2])*3]
+                new_obj_normal_array[int(v1.split("/")[0])*3+1]=obj_normal_array[int(v1.split("/")[2])*3+1]
+                new_obj_normal_array[int(v1.split("/")[0])*3+2]=obj_normal_array[int(v1.split("/")[2])*3+2]
 
-        elif v1.split("/")[0] == v1.split("/")[1]:
-            #also ok, just different split
-            new_obj_normal_array[int(v1.split("/")[0])]=obj_normal_array[int(v1.split("/")[0])]
 
-        elif v1.split("/")[0] != v1.split("/")[1]:
-            if new_obj_normal_array[int(v1.split("/")[0])] != 0 and new_obj_normal_array[int(v1.split("/")[0])] != obj_normal_array[int(v1.split("/")[2])]:
-                print("COPY ERROR: "+Fore.RED + "Face Buffer not empty" +Style.RESET_ALL)                                                                  
-            #Move entry to new buffer
-            new_obj_normal_array[int(v1.split("/")[0])]=obj_normal_array[int(v1.split("/")[1])]        
+        elif len(v1.split("/")) == 2:
+
+            if v1.split("/")[0] == v1.split("/")[1]:
+                #also ok, just different split
+                new_obj_normal_array[int(v1.split("/")[0])*3]=obj_normal_array[int(v1.split("/")[0])*3]
+
+
+            elif v1.split("/")[0] != v1.split("/")[1]:
+                if new_obj_normal_array[int(v1.split("/")[0])*3] != 0 and new_obj_normal_array[int(v1.split("/")[0])*3] != obj_normal_array[int(v1.split("/")[1])*3]:
+                    print("COPY ERROR: "+Fore.RED + "Face Buffer not empty" +Style.RESET_ALL)                                                                  
+                #Move entry to new buffer
+                new_obj_normal_array[int(v1.split("/")[0])*3]=obj_normal_array[int(v1.split("/")[1])*3]        
 
 
 
@@ -264,27 +275,36 @@ for line in FACE_LINE:
 #VERTEX2
 
         if len(v2.split("/")) > 2:
+
             if v2.split("/")[0] == v2.split("/")[2]:
                 # OK to copy current entry to new normal buffer
-                new_obj_normal_array[int(v2.split("/")[0])]=obj_normal_array[int(v2.split("/")[0])]
+                new_obj_normal_array[int(v2.split("/")[0])*3]=obj_normal_array[int(v2.split("/")[0])*3]
+                new_obj_normal_array[int(v2.split("/")[0])*3+1]=obj_normal_array[int(v2.split("/")[0])*3+1]
+                new_obj_normal_array[int(v2.split("/")[0])*3+2]=obj_normal_array[int(v2.split("/")[0])*3+2]
 
             elif v2.split("/")[0] != v2.split("/")[2]:
                 #Move entry to new buffer
-                if new_obj_normal_array[int(v2.split("/")[0])] != 0 and new_obj_normal_array[int(v2.split("/")[0])] != obj_normal_array[int(v2.split("/")[2])]:
-                    print("COPY ERROR: "+Fore.RED + "Face Buffer not empty" +Style.RESET_ALL)                               
-                new_obj_normal_array[int(v2.split("/")[0])]=obj_normal_array[int(v2.split("/")[2])]
+                if new_obj_normal_array[int(v2.split("/")[0])*3+1] != 0 and new_obj_normal_array[int(v2.split("/")[0])*3+1] != obj_normal_array[int(v2.split("/")[2])*3+1]:
+                    print("COPY ERROR: "+Fore.RED + "Face Buffer not empty" +Style.RESET_ALL)
 
-        elif v2.split("/")[0] == v2.split("/")[1]:
-            print(v2.split("/")[0] +"=="+ v2.split("/")[1])
-            #also ok, just different split
-            new_obj_normal_array[int(v2.split("/")[0])]=obj_normal_array[int(v2.split("/")[0])]
+                new_obj_normal_array[int(v2.split("/")[0])*3]=obj_normal_array[int(v2.split("/")[2])*3]
+                new_obj_normal_array[int(v2.split("/")[0])*3+1]=obj_normal_array[int(v2.split("/")[2])*3+1]
+                new_obj_normal_array[int(v2.split("/")[0])*3+2]=obj_normal_array[int(v2.split("/")[2])*3+2]
 
-        elif v2.split("/")[0] != v2.split("/")[1]:
-            print(v2.split("/")[0] +"!="+ v2.split("/")[1])
-            if new_obj_normal_array[int(v2.split("/")[0])] != 0 and new_obj_normal_array[int(v2.split("/")[0])] != obj_normal_array[int(v2.split("/")[2])]:
-                print("COPY ERROR: "+Fore.RED + "Face Buffer not empty" +Style.RESET_ALL)                                                                  
-            #Move entry to new buffer
-            new_obj_normal_array[int(v2.split("/")[0])]=new_obj_normal_array[int(v2.split("/")[1])]       
+
+        elif len(v2.split("/")) == 2:
+            if v2.split("/")[0] == v2.split("/")[1]:
+                print(v2.split("/")[0] +"=="+ v2.split("/")[1])
+                #also ok, just different split
+                new_obj_normal_array[int(v2.split("/")[0])*3+1]=obj_normal_array[int(v2.split("/")[0])*3+1]
+
+            elif v2.split("/")[0] != v2.split("/")[1]:
+                print(v2.split("/")[0] +"!="+ v2.split("/")[1])
+                if new_obj_normal_array[int(v2.split("/")[0])*3+1] != 0 and new_obj_normal_array[int(v2.split("/")[0])*3+1] != obj_normal_array[int(v2.split("/")[1])*3+1]:
+                    print("COPY ERROR: "+Fore.RED + "Face Buffer not empty" +Style.RESET_ALL)
+
+                #Move entry to new buffer
+                new_obj_normal_array[int(v2.split("/")[0])*3+1]=obj_normal_array[int(v2.split("/")[1])*3+1]       
 
 #VERTEX3
 
@@ -292,24 +312,39 @@ for line in FACE_LINE:
         if len(v3.split("/")) > 2:
             if v3.split("/")[0] == v3.split("/")[2]:
                 # OK to copy current entry to new normal buffer
-                new_obj_normal_array[int(v3.split("/")[0])]=obj_normal_array[int(v3.split("/")[0])]
+                new_obj_normal_array[int(v3.split("/")[0])*3]=obj_normal_array[int(v3.split("/")[0])*3]
+                new_obj_normal_array[int(v3.split("/")[0])*3+1]=obj_normal_array[int(v3.split("/")[0])*3+1]
+                new_obj_normal_array[int(v3.split("/")[0])*3+2]=obj_normal_array[int(v3.split("/")[0])*3+2]
 
             elif v3.split("/")[0] != v3.split("/")[2]:
                 #Move entry to new buffer
-                if new_obj_normal_array[int(v3.split("/")[0])] != 0 and new_obj_normal_array[int(v3.split("/")[0])] != obj_normal_array[int(v3.split("/")[2])]:
+                if new_obj_normal_array[int(v3.split("/")[0])*3+2] != 0 and new_obj_normal_array[int(v3.split("/")[0])*3+2] != obj_normal_array[int(v3.split("/")[2])*3+2]:
                     print("COPY ERROR: "+Fore.RED + "Face Buffer not empty" +Style.RESET_ALL)                               
-                new_obj_normal_array[int(v3.split("/")[0])]=obj_normal_array[int(v3.split("/")[2])]
+                #print("Copy Vertex w3 3 : " + str(obj_normal_array[int(v3.split("/")[2])*3+2]))
 
-            elif v3.split("/")[0] == v3.split("/")[1]:
+                new_obj_normal_array[int(v3.split("/")[0])*3]=obj_normal_array[int(v3.split("/")[2])*3]
+                new_obj_normal_array[int(v3.split("/")[0])*3+1]=obj_normal_array[int(v3.split("/")[2])*3+1]
+                new_obj_normal_array[int(v3.split("/")[0])*3+2]=obj_normal_array[int(v3.split("/")[2])*3+2]
+
+
+        elif len(v3.split("/")) == 2:
+
+            if v3.split("/")[0] == v3.split("/")[1]:
                 #also ok, just different split
-                new_obj_normal_array[int(v3.split("/")[0])]=obj_normal_array[int(v3.split("/")[0])]
-
-            elif v3.split("/")[0] != v3.split("/")[1]:
-                if new_obj_normal_array[int(v3.split("/")[0])] != 0 and new_obj_normal_array[int(v3.split("/")[0])] != obj_normal_array[int(v3.split("/")[2])]:
+                new_obj_normal_array[int(v3.split("/")[0])*3+2]=obj_normal_array[int(v3.split("/")[0])*3+2]
+                #print("Keep Vertex w2 3 " + str(new_obj_normal_array[int(v3.split("/")[0])*3+2]))
+            if v3.split("/")[0] != v3.split("/")[1]:
+                if new_obj_normal_array[int(v3.split("/")[0])*3+2] != 0 and new_obj_normal_array[int(v3.split("/")[0])*3+2] != obj_normal_array[int(v3.split("/")[1])*3+2]:
                     print("COPY ERROR: "+Fore.RED + "Face Buffer not empty" +Style.RESET_ALL)                                                                  
                 #Move entry to new buffer
-                new_obj_normal_array[int(v3.split("/")[0])]=new_obj_normal_array[int(v3.split("/")[1])]       
+                #print("Copy Vertex w3 3: " + v3.split("/")[0] +"!=" +v3.split("/")[1])
+                new_obj_normal_array[int(v3.split("/")[0])*3+2]=obj_normal_array[int(v3.split("/")[1])*3+2]       
             
+
+
+
+
+
     new_v1=v1.split("/")[0]
     new_v2=v2.split("/")[0]
     new_v3=v3.split("/")[0]
@@ -336,7 +371,7 @@ for line in FACE_LINE:
 new_face_temp_file.close()
 
 
-new_obj_file = open(str(sys.argv[1]) + "_processed.obj", "w")
+new_obj_file = open(str(sys.argv[1]).split(".")[0] + "_processed.obj", "w")
 new_obj_file.write("g " + str(obj_g1) + "\n")
 
 vertex_write_count=0
@@ -345,8 +380,9 @@ for index in range(int(len(obj_vertex_array)/3)):
     vertex_write_count+=1
 normal_write_count=0
 normal_write_count=0
-for index in range(int(len(new_obj_normal_array)/3)):
-    new_obj_file.write("vn " + str(new_obj_normal_array[index*3]) + " "+ str(new_obj_normal_array[index*3+1]) +" "+ str(new_obj_normal_array[index*3+2]) + "\n")
+for index in range(int(len(obj_vertex_array)/3)):
+    #print("Writing Normal: "+str(index)+"vn " + str(new_obj_normal_array[index*3]) + " "+ str(new_obj_normal_array[index*3+1]) +" "+ str(new_obj_normal_array[index*3+2]))
+    new_obj_file.write("vn " + str(new_obj_normal_array[(index)*3]) + " "+ str(new_obj_normal_array[(index)*3+1]) +" "+ str(new_obj_normal_array[(index)*3+2]) + "\n")
     normal_write_count+=1
 
 new_obj_file.write("g " + str(obj_g1) + "_0\n")
