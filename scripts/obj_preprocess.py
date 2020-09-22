@@ -191,6 +191,7 @@ for line in OBJECT_LINE:
         #Collect Normals
         elif "vn" in line.split()[0]: 
             #print(str(obj_normal_count)+ line)
+            print("Normal Line: " + line)
             obj_normal_array[obj_normal_count*3]=float(str(line.split()[1]))
             obj_normal_array[obj_normal_count*3+1]=float(str(line.split()[2]))
             obj_normal_array[obj_normal_count*3+2]=float(str(line.split()[3]))
