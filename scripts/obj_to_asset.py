@@ -3,6 +3,7 @@ major=0
 minor=4
 
 import sys
+import os
 from colorama import Fore, Back, Style, init
 import time
 import progressbar
@@ -86,50 +87,167 @@ print("Vertex: "+Fore.GREEN +str(vertex_count)+Style.RESET_ALL)
 print("Vertex Buffer Size: "+ Fore.GREEN +str(vertex_buffer_size)+Style.RESET_ALL)
 vertex_buffer_block_size=(vertex_buffer_size/vertex_count)
 print("Vertex Buffer Block Size: " +Fore.GREEN+ str(vertex_buffer_block_size)+Style.RESET_ALL)
-print("Raw Buffers")
+#print("Raw Buffers")
 #print("INDEX BUFFER: " + Fore.RED + str(index_buffer)+Style.RESET_ALL)
 #print("VERTEX BUFFER: "+ Fore.RED + str(vertex_buffer)+Style.RESET_ALL)
 
 
 
 
-
 ##################################################################################################
-#Read OBJ File
-
-
-
-
-
-
+#Preprocess Object File
 
 
 #open Object file from command line
 object_file = open(sys.argv[2], "r")
-#Read file line by line
-OBJECT_LINE = object_file.readlines()
+
 
 #extract vertex buffer size
 obj_vertex_count_preprocess=0
 obj_normal_count_preprocess=0
 obj_uv_count_preprocess=0
 obj_face_count_preprocess=0
+obj_name_count_preprocess=0
+
+
+obj_material_path=""
+obj_material_count_preprocess=0
+obj_material_list=""
+
+obj_header_text_preprocess=""
+obj_multi_obj_preprocess_flag=0
+obj_count_preprocess=1
+
+obj_vertex_count_array_preprocess=""
+obj_normal_count_array_preprocess=""
+obj_uv_count_array_preprocess=""
+obj_face_count_array_preprocess=""
+
+obj_name=""
+
+obj_line_count_preprocess=0
+
+
+obj_vertex_array_size_preprocess=0
+obj_normal_array_size_preprocess=0
+obj_uv_array_size_preprocess=0
+obj_face_array_size_preprocess=0
+
+#Read file line by line
+OBJECT_LINE = object_file.readlines()
+print("Preprocessing file : "+Fore.GREEN + str(sys.argv[2].split("\\")[len(sys.argv[2].split("\\"))-1]) +Style.RESET_ALL)
 for line in OBJECT_LINE:
-    if "v " in line:
+    
+    if "v" == line.split()[0] and obj_multi_obj_preprocess_flag == 1:
+        #Detect Multiple Objects.
+        obj_count_preprocess+=1
+        obj_vertex_count_array_preprocess+=str(obj_vertex_count_preprocess) + " "
+        obj_normal_count_array_preprocess+=str(obj_normal_count_preprocess) + " "
+        obj_uv_count_array_preprocess+=str(obj_uv_count_preprocess) + " "
+        obj_face_count_array_preprocess+=str(obj_face_count_preprocess) + " "
+        
+        obj_vertex_array_size_preprocess+=obj_vertex_count_preprocess
+        obj_normal_array_size_preprocess+=obj_normal_count_preprocess
+        obj_uv_array_size_preprocess+=obj_uv_count_preprocess
+        obj_face_array_size_preprocess+=obj_face_count_preprocess
+
+        obj_vertex_count_preprocess=0
+        obj_normal_count_preprocess=0
+        obj_uv_count_preprocess=0
+        obj_face_count_preprocess=0
+        obj_multi_obj_preprocess_flag=0
+
+
+        print("New Object Detected: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
+    if "v" == line.split()[0]:
         obj_vertex_count_preprocess+=1
-    if "vn " in line:
+    if "vn" in line.split()[0]:
         obj_normal_count_preprocess+=1
-    if "vt " in line:
+    if "vt" in line.split()[0]:
         obj_uv_count_preprocess+=1
-    if "f " in line:
+    if "f" in line.split()[0]:
         obj_face_count_preprocess+=1
+        obj_multi_obj_preprocess_flag=1
+    
+    if "mtllib" == line.split()[0]:
+        obj_material_path=line.split()[1]
+    if "usemtl" == line.split()[0]:
+        obj_material_list+=line.split()[1] + " "
+        obj_material_count_preprocess+=1
 
+    if "o" == line.split()[0]:
+        obj_name+=line.split()[1] + " "
+        obj_name_count_preprocess+=1
+    
+    if obj_vertex_count_preprocess == 0 and obj_material_path == "":
+        obj_header_text_preprocess+=line
+    obj_line_count_preprocess+=1
 
+#Store Last Preprocess Values in Array
+obj_vertex_count_array_preprocess+=str(obj_vertex_count_preprocess)
+obj_normal_count_array_preprocess+=str(obj_normal_count_preprocess)
+obj_uv_count_array_preprocess+=str(obj_uv_count_preprocess)
+obj_face_count_array_preprocess+=str(obj_face_count_preprocess)
+
+#Store Last Preprocess Values
+obj_vertex_array_size_preprocess+=obj_vertex_count_preprocess
+obj_normal_array_size_preprocess+=obj_normal_count_preprocess
+obj_uv_array_size_preprocess+=obj_uv_count_preprocess
+obj_face_array_size_preprocess+=obj_face_count_preprocess
 
 #Return to beginng
 object_file.seek(0)
-#Read file line by line
-OBJECT_LINE = object_file.readlines()
+
+
+print("Preprocessing: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
+
+
+print(".Obj Info")
+print("Number of Objects: "+Fore.GREEN + str(obj_count_preprocess)+Style.RESET_ALL)
+print("Object Names: "+Fore.GREEN + str(obj_name)+Style.RESET_ALL)
+print("Number of Materials: "+Fore.GREEN + str(obj_material_count_preprocess)+Style.RESET_ALL)
+print("Materials: "+Fore.GREEN +str(obj_material_list)+Style.RESET_ALL)
+print("Total Vertex: "+Fore.GREEN +str(obj_vertex_array_size_preprocess)+Style.RESET_ALL)
+print("Total Normal: "+Fore.GREEN +str(obj_normal_array_size_preprocess)+Style.RESET_ALL)
+print("Total UV: "+Fore.GREEN +str(obj_uv_array_size_preprocess)+Style.RESET_ALL)
+print("Total Face: "+Fore.GREEN +str(obj_face_array_size_preprocess)+Style.RESET_ALL)
+
+
+
+
+#Preprocess MTL File
+
+obj_material_path_ok=0
+
+
+
+
+
+
+
+
+
+
+
+
+
+##################################################################################################
+#Parse Object File Data
+
+
+
+obj_vertex_count=0
+obj_normal_count=0
+obj_uv_count=0
+obj_face_count=0
+
+
+
+
+
+
+
+
 
 #Parse Control
 g1_found=0
@@ -143,7 +261,7 @@ error_flag=0
 
 #Verticies
 #my indexing method breaks on position 0
-obj_vertex_array= np.zeros((obj_vertex_count_preprocess)*3, dtype=float)
+obj_vertex_array= np.zeros((obj_count_preprocess*obj_vertex_array_size_preprocess)*3, dtype=float)
 obj_vertex_count_v=0
 
 
@@ -151,11 +269,15 @@ obj_vertex_count_v=0
 
 #Normals
 obj_vertex_count_vn=0
-obj_normal_array= np.zeros((obj_normal_count_preprocess)*3, dtype=float)
+obj_normal_array= np.zeros((obj_count_preprocess*obj_normal_array_size_preprocess)*3, dtype=float)
+
+#UV
+
+obj_uv_array= np.zeros((obj_count_preprocess*obj_uv_array_size_preprocess)*3, dtype=float)
 
 #Faces
 obj_vertex_count_f=0
-obj_face_array= np.zeros((obj_face_count_preprocess)*3, dtype=int)
+obj_face_array= np.zeros((obj_count_preprocess*obj_face_array_size_preprocess)*3, dtype=int)
 #Object Header Information
 obj_vert_count=0
 obj_index_cound=0
@@ -163,75 +285,88 @@ obj_g1=''
 obj_g2=''
 
 
+obj_next_index=0
+object_index=0
 
+debug_count=0
 
-
+#bar = progressbar.ProgressBar(max_value=obj_line_count_preprocess)
+#progress_bar_count=0
+#Read file line by line
+OBJECT_LINE = object_file.readlines()
 #comb through file, line by line
-print("Reading Object File...")
+#print("Processing Object "+str(object_index) + ":")
 for line in OBJECT_LINE: 
     #check for Errors
     if fail_flag == 0:
-
-        #Find Object name
-        if g1_found == 0 and v_found == 0 and vn_found == 0 and g2_found == 0 and f_found == 0 and "g " in line:
-            obj_g1=str(line.split(" ", maxsplit=1)[1].strip())
-            g1_found=1
+        #print(str(debug_count))
+        #Check if we are at the next object from the list we compiled during preprocessing
+        
+        if ("o" in line.split()[0] or "g" in line.split()[0]) and  obj_name.split()[obj_next_index].strip() == line.split()[1].strip():
+            #print(str(obj_name.split()[obj_next_index].strip())+" == "+str(line.split()[1].strip()))
+            print("Setting New Object: "+Fore.GREEN + "["+obj_name.split()[obj_next_index].strip() +"]"+Style.RESET_ALL)
+            object_index=obj_next_index
+            obj_next_index+=1
+            obj_normal_count=0
+            obj_vertex_count=0
+            obj_uv_count=0
+            obj_s_value=0
+            obj_face_material='default'
 
 
         #Collect Verticies
-        elif g1_found == 1 and v_found == 0 and vn_found == 0 and g2_found == 0 and f_found == 0 and "v " in line:
+        elif "v" == line.split()[0]:
             #print("Reading Verticies")
-            v_found=1
-            obj_vertex_array[obj_vertex_count_v*3]=float(str(line.split()[1]))
-            obj_vertex_array[obj_vertex_count_v*3+1]=float(str(line.split()[2]))
-            obj_vertex_array[obj_vertex_count_v*3+2]=float(str(line.split()[3]))
-            obj_vertex_count_v+=1
-
-
-            #obj_vertex_array+=temp_vertex
-        elif g1_found == 1 and v_found == 1 and vn_found == 0 and g2_found == 0 and f_found == 0 and "v " in line:
-            v_found=1
-            obj_vertex_array[obj_vertex_count_v*3]=float(str(line.split()[1]))
-            obj_vertex_array[obj_vertex_count_v*3+1]=float(str(line.split()[2]))
-            obj_vertex_array[obj_vertex_count_v*3+2]=float(str(line.split()[3]))
-            obj_vertex_count_v+=1
-
-
+            obj_vertex_array[object_index*obj_vertex_count*3]=float(str(line.split()[1]))
+            obj_vertex_array[object_index*obj_vertex_count*3+1]=float(str(line.split()[2]))
+            obj_vertex_array[object_index*obj_vertex_count*3+2]=float(str(line.split()[3]))
+            obj_vertex_count+=1
 
 
         #Collect Normals
-        elif g1_found == 1 and v_found == 1 and vn_found == 0 and g2_found == 0 and f_found == 0 and "vn " in line: 
+        elif "vn" == line.split()[0]: 
             #print("Reading Normals")
             vn_found=1
-            obj_normal_array[obj_vertex_count_vn*3]=float(str(line.split()[1]))
-            obj_normal_array[obj_vertex_count_vn*3+1]=float(str(line.split()[2]))
-            obj_normal_array[obj_vertex_count_vn*3+2]=float(str(line.split()[3]))
+            obj_normal_array[object_index*obj_normal_count*3]=float(str(line.split()[1]))
+            obj_normal_array[object_index*obj_normal_count*3+1]=float(str(line.split()[2]))
+            obj_normal_array[object_index*obj_normal_count*3+2]=float(str(line.split()[3]))
             #obj_normal_array[obj_vertex_count_vn*3]=0
             #obj_normal_array[obj_vertex_count_vn*3+1]=0
             #obj_normal_array[obj_vertex_count_vn*3+2]=0
+            obj_normal_count+=1
+        
+        #Collect UV
+        elif "vt" == line.split()[0]: 
+            #print("Reading UV")
+            vt_found=1
+            obj_uv_array[object_index*obj_uv_count*3]=float(str(line.split()[1]))
+            obj_uv_array[object_index*obj_uv_count*3+1]=float(str(line.split()[2]))
 
-            obj_vertex_count_vn+=1
-            #print(str(line))
-        elif g1_found == 1 and v_found == 1 and vn_found == 1 and g2_found == 0 and f_found == 0 and "vn " in line:
-            vn_found=1
-            obj_normal_array[obj_vertex_count_vn*3]=float(str(line.split()[1]))
-            obj_normal_array[obj_vertex_count_vn*3+1]=float(str(line.split()[2]))
-            obj_normal_array[obj_vertex_count_vn*3+2]=float(str(line.split()[3]))
             #obj_normal_array[obj_vertex_count_vn*3]=0
             #obj_normal_array[obj_vertex_count_vn*3+1]=0
             #obj_normal_array[obj_vertex_count_vn*3+2]=0
-            #obj_vertex_count_vn+=1
-            #print(str(line))
-            
+            obj_uv_count+=1
 
-        #Find G2
-        elif g1_found == 1 and v_found == 1 and vn_found == 1 and g2_found == 0 and f_found == 0 and "g " in line: 
-            #print("Reading G2")
-            g2_found=1
-            obj_g2=str(line.split(" ", maxsplit=1)[1].strip())
 
+        #Set Material
+        elif "usemtl" == line.split()[0]: 
+            obj_face_material=str(line.split()[1])
+            print("Using Material: "+ Fore.GREEN + str(line.split()[1]) +Style.RESET_ALL)
+                    #Set Material
+        elif "mtllib" == line.split()[0]: 
+            if obj_material_path == line.split()[1] and obj_material_path_ok == 1:
+                print("Using .MTL file: "+ Fore.GREEN + str(obj_material_path) +Style.RESET_ALL)
+            else:
+                print("Use .MTL file: "+ Fore.RED + "[FAIL]" +Style.RESET_ALL)
+        
+        #Set S property
+        elif "s" == line.split()[0]: 
+            obj_s_value=str(line.split()[1])
         #Find Faces, Stored in reverse order
-        elif g1_found == 1 and v_found == 1 and vn_found == 1 and g2_found == 1 and f_found == 0 and "f " in line:
+        
+
+
+        elif "f" == line.split()[0]: 
             #print("Reading Faces")        
             f_found=1
 
@@ -239,9 +374,7 @@ for line in OBJECT_LINE:
             data1=face_buffer[1].split("/")
             data2=face_buffer[2].split("/")
             data3=face_buffer[3].split("/")
-            print(data1[0])
-            print(data2[0])
-            print(data3[0])
+
             
             obj_face_array[obj_vertex_count_f*3]=int(data1[0])
             obj_face_array[obj_vertex_count_f*3+1]=int(data2[0])
@@ -250,61 +383,44 @@ for line in OBJECT_LINE:
             #obj_face_array[obj_vertex_count_f*3]=int(str(line.split("/")[5]))
             #obj_face_array[obj_vertex_count_f*3+1]=int(str(line.split("/")[3]))
             #obj_face_array[obj_vertex_count_f*3+2]=int(str(line.split("/")[1]))
-            obj_vertex_count_f+=1
-            #print(str(line))
-        elif g1_found == 1 and v_found == 1 and vn_found == 1 and g2_found == 1 and f_found == 1 and "f " in line:
-            f_found=1
-            face_buffer=line.split()
-            data1=face_buffer[1].split("/")
-            data2=face_buffer[2].split("/")
-            data3=face_buffer[3].split("/")
-            
-            obj_face_array[obj_vertex_count_f*3]=int(data1[0])
-            obj_face_array[obj_vertex_count_f*3+1]=int(data2[0])
-            obj_face_array[obj_vertex_count_f*3+2]=int(data3[0])
-            #obj_face_array[obj_vertex_count_f*3]=int(str(line.split("/")[5]))
-            #obj_face_array[obj_vertex_count_f*3+1]=int(str(line.split("/")[3]))
-            #obj_face_array[obj_vertex_count_f*3+2]=int(str(line.split("/")[1]))
-            obj_vertex_count_f+=1
-            #print(str(line))
+            obj_face_count+=1
+
+        elif "#" in line:
+            print("COMMENT: "+Fore.YELLOW +str(line.strip("\n")) + Style.RESET_ALL)
+
         else:
             print("PARSE ERROR: "+Fore.RED + "Could not Parse: " +str(line) + Style.RESET_ALL)
+            print(str(obj_material_list.split()[obj_next_index]))
 
-#check for errors
-if g1_found == 0:
-    print("PARSE ERROR: "+Fore.RED + "No verticies array name found!" +Style.RESET_ALL)
-    error_flag=1
-if v_found == 0:
-    print("PARSE ERROR: "+Fore.RED + "No verticies array found!" +Style.RESET_ALL)
-    error_flag=1
-if vn_found == 0:
-    print("PARSE ERROR: "+Fore.RED + "No normal array found!" +Style.RESET_ALL)
-    error_flag=1
-if g2_found == 0:
-    print("PARSE ERROR: "+Fore.RED + "No face array name found!" +Style.RESET_ALL)
-    error_flag=1
-if f_found == 0:
-    print("PARSE ERROR: "+Fore.RED + "No face array found!" +Style.RESET_ALL)
-    error_flag=1
+    #progress_bar_count+=1
+    #bar.update(progress_bar_count)
+
+    debug_count+=1
+
             
 
            
             
 
     
-print("Extracted Object Header")
-print("Asset Mesh Name: "+Fore.GREEN + str(obj_g1)+Style.RESET_ALL)
-print("Asset Face Name: "+Fore.GREEN + str(obj_g2)+Style.RESET_ALL)
-print("Vertex Count(v): "+Fore.GREEN +str(obj_vertex_count_v)+Style.RESET_ALL)
-print("Normal Count(vn): "+Fore.GREEN +str(obj_vertex_count_vn)+Style.RESET_ALL)
-print("Face Count(f): "+Fore.GREEN +str(obj_vertex_count_f*3)+Style.RESET_ALL)
+print("Object Info")
+print("Header Information: \n"+Fore.GREEN + str(obj_header_text_preprocess)+Style.RESET_ALL)
+print("Number of Objects: "+Fore.GREEN + str(obj_count_preprocess)+Style.RESET_ALL)
+for object_num in range(obj_count_preprocess):
+    print("#######################################################")
+    print("Object Number: " + str(object_num+1))
+    print("Object Name: "+Fore.GREEN + str(obj_g1)+Style.RESET_ALL)
+    print("Material: "+Fore.GREEN + str(obj_g2)+Style.RESET_ALL)
+    print("Total Vertexs(v): "+Fore.GREEN +str(obj_vertex_count_v)+Style.RESET_ALL)
+    print("Total Normal(vn): "+Fore.GREEN +str(obj_vertex_count_vn)+Style.RESET_ALL)
+    print("Total Faces(f): "+Fore.GREEN +str(obj_vertex_count_f*3)+Style.RESET_ALL)
 
-
+print("#######################################################")
 print("Vertex Data")
 #for vertex_data in range(obj_vertex_count_v):
     #print("Vertex: " + str(vertex_data) + " X: " + str(obj_vertex_array[vertex_data*3]) + " Y: " + str(obj_vertex_array[vertex_data*3+1]) + " Z: " + str(obj_vertex_array[vertex_data*3+2]))
-for vertex_data in range(obj_vertex_count_vn):
-    print("Normal: " + str(vertex_data) + " X: " + str(obj_normal_array[vertex_data*3]) + " Y: " + str(obj_normal_array[vertex_data*3+1]) + " Z: " + str(obj_normal_array[vertex_data*3+2]))
+#for vertex_data in range(obj_vertex_count_vn):
+    #print("Normal: " + str(vertex_data) + " X: " + str(obj_normal_array[vertex_data*3]) + " Y: " + str(obj_normal_array[vertex_data*3+1]) + " Z: " + str(obj_normal_array[vertex_data*3+2]))
 #for vertex_data in range(obj_vertex_count_f):
     #print("Face " + str(vertex_data) + ": " + str(obj_face_array[vertex_data*3]) + " " + str(obj_face_array[vertex_data*3+1]) + " " + str(obj_face_array[vertex_data*3+2]))
 
