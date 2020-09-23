@@ -141,8 +141,8 @@ mtllib_file_name=sys.argv[1].split("\\")[len(sys.argv[1].split("\\"))-1].split("
 binary_file.write("mtllib " + str(mtllib_file_name) + ".mtl\n")
 
 
-bar = progressbar.ProgressBar(max_value=vertex_buffer_size*2+len(index_buffer)+vertex_count*24)
-progress_bar_count=0
+#bar = progressbar.ProgressBar(max_value=vertex_buffer_size*2+len(index_buffer)+vertex_count*24)
+#progress_bar_count=0
 byte_count=0
 
 
@@ -395,15 +395,17 @@ for byte in index_buffer:
 
             if material_buffer.split()[pos_a] == material_buffer.split()[pos_b]:
                 current_material=material_buffer.split()[pos_a]
-            elif material_buffer.split()[pos_a] == material_buffer.split()[pos_c]
+            elif material_buffer.split()[pos_a] == material_buffer.split()[pos_c]:
                 current_material=material_buffer.split()[pos_a]
-            elif material_buffer.split()[pos_b] == material_buffer.split()[pos_c]
+            elif material_buffer.split()[pos_b] == material_buffer.split()[pos_c]:
                 current_material=material_buffer.split()[pos_b]
-            elif material_buffer.split()[pos_a] == material_buffer.split()[pos_c]
+            elif material_buffer.split()[pos_a] == material_buffer.split()[pos_c]:
                 current_material=material_buffer.split()[pos_b]                  
 
-
-  
+            if current_material != old_material:
+                old_material=current_material
+                print("Writting Material: "+ Fore.GREEN + "[ "+ current_material + " ]" +Style.RESET_ALL)
+                binary_file.write("usemtl " + get_material_name(current_material)+"\n")
 
 
 
@@ -423,8 +425,8 @@ for byte in index_buffer:
             pos_b_lsb=''
             pos_c_lsb=''
 
-    progress_bar_count+=1
-    bar.update(progress_bar_count)
+    #progress_bar_count+=1
+    #bar.update(progress_bar_count)
 
 
 
@@ -457,7 +459,7 @@ for material_index in range(len(material_list.split())):
     material_file.write("illum "+ "???" +"\n")
     material_file.write("\n")
 
-
+print("Writting .MTL: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
 
 
 
