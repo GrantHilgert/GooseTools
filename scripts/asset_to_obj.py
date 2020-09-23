@@ -119,8 +119,11 @@ print("Vertex Buffer Block Size: " +Fore.GREEN+ str(vertex_buffer_block_size)+St
 #print("VERTEX BUFFER: "+ Fore.RED + str(vertex_buffer)+Style.RESET_ALL)
 
 
+#Create New Object and Material File
+binary_file = open(sys.argv[1].split(".")[0]+".obj", "w")
+material_file = open(sys.argv[1].split(".")[0]+".mtl", "w")
 
-binary_file = open(sys.argv[1].split(".")[0]+str(asset_name)+".obj", "w")
+
 bar = progressbar.ProgressBar(max_value=vertex_buffer_size*2+len(index_buffer)+vertex_count*24)
 progress_bar_count=0
 byte_count=0
