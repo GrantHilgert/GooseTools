@@ -123,6 +123,16 @@ print("Vertex Buffer Block Size: " +Fore.GREEN+ str(vertex_buffer_block_size)+St
 binary_file = open(sys.argv[1].split(".")[0]+".obj", "w")
 material_file = open(sys.argv[1].split(".")[0]+".mtl", "w")
 
+#Write Object File Header
+binary_file.write("#GooseTools Model Extractor V." + str(major) + "." + str(minor))
+binary_file.write("\n#https://github.com/GrantHilgert/GooseTools\n")
+#Write Material File Header
+material_file.write("#GooseTools Model Extractor V." + str(major) + "." + str(minor))
+material_file.write("\n#https://github.com/GrantHilgert/GooseTools\n")
+
+
+
+
 
 bar = progressbar.ProgressBar(max_value=vertex_buffer_size*2+len(index_buffer)+vertex_count*24)
 progress_bar_count=0
@@ -135,80 +145,162 @@ block_count=0
 skip_count=1
 count=0
 
+
+
 normal_buffer=""
-binary_file.write("g " + str(asset_name) + "\n")
-binary_file.write("v ")
-cycles=0
-hex_string=''
-for byte in vertex_buffer:
-    #binary_file.write("Byte: " + str(byte_count) + " block: " + str(block_count)+ " skip: "+str(skip_count)+"\n")
-    byte_count+=1
-    block_count+=1
-    cycles+=1
-    #Vertex Data 
-    if skip_count < 4:
-        hex_string+=str(byte)
-        if byte_count == 8:
-            binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(hex_string))).strip('(),')),7)))
-            binary_file.write(" ")
-            hex_string=''
-            byte_count=0
-            skip_count+=1
-            
-    elif skip_count > 6 and skip_count < 13:
-        normal_buffer+=str(byte)
-        if byte_count == 4:
-            #binary_file.write("\n")
-            byte_count=0
-            skip_count+=1            
-    else:
-        if byte_count == 4:
-            #binary_file.write("\n")
-            byte_count=0
-            skip_count+=1
-        if block_count == (vertex_buffer_block_size*2):
-            #binary_file.write("\n")
-            binary_file.write("\n")
-            if cycles < len(vertex_buffer):
-                binary_file.write("v ")
-            block_count=0
-            skip_count=1
-            
 
-    count+=1
-    progress_bar_count+=1
-    bar.update(progress_bar_count)
-print("Ending Byte Count: " + str(byte_count))
-print("Ending Block Count: " + str(block_count))
-print("Ending Write Count: " + str(count))
+
+#Write Object Name
+binary_file.write("o " + str(asset_name) + "\n")
+
+
+#Every two bytes. One line in the excel file
+word_index=0
+
+#materials
+current_material=""
+old_material=""
+#indexed list of all vertex material data
+material_buffer="" 
+#List of materials used in the model
+material_list=""
+material_count=0
+
+####################################################################
+#New .OBJ and .MTL Creation Routine
+
+print("Vertex Buffer Array Len "+ Fore.RED +str(len(vertex_buffer)/44) +Style.RESET_ALL)
+
+# 11 Double file structure
+# long 1: X
+# long 2: Y
+# DOuble 3: Z
+# Double 4: Normal X
+# Double 5: Normal Y
+# DOuble 6: Normal Z
+# Double 7: Unknown
+# Double 8: Unknown
+# Double 9: Unknown
+# Doublw 10: Unknown
+# Double 12: 3 Byte COlOR + "FF" TERMINATOR?
+
+
+#POS: Positon
+#NORM: Normal
+#SKIP: Unknown
+#COLOR: COLOR
+#USEMTL: MATERIAL
 
 
 
-cycles=0
-byte_count=0
-hex_string=''
-binary_file.write("vn ")
-for byte in normal_buffer:
 
-    progress_bar_count+=1
-    bar.update(progress_bar_count)
-    cycles+=1
-    byte_count+=1
-    block_count+=1
-    hex_string+=str(byte)
-    #binary_file.write(str(byte))
-    if byte_count == 8:
-        #print(str(hex_string))
-        binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(hex_string))).strip('(),')),7)))
-        binary_file.write(" ")
-        hex_string=''
-        byte_count=0
-    if block_count == 24:
-        #binary_file.write("\n")
-        block_count=0
-        binary_file.write("\n")
-        if cycles < len(normal_buffer):
+data_pos_index="POS X"
+
+#number of bytes to skip until next write
+skip_count=0
+#Dont write on the same loop
+write_flag=0
+#Write Vertex Data and collect material data at the same time to save time
+
+for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
+    #print(str(long_index))
+    temp_string=""
+    #for each byte
+    for temp_index in range(8):
+        #collect one double from the string
+        temp_string+=vertex_buffer[long_index*8+temp_index]
+     
+    if data_pos_index.split()[0].strip() =="POS":    
+        if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
+            binary_file.write("v ")
+            binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)))
+            binary_file.write(" ")         
+            data_pos_index="POS Y"
+            write_flag=1
+        if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:
+            binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)))
+            binary_file.write(" ")          
+            data_pos_index="POS Z"
+            write_flag=1
+        if data_pos_index.split()[1].strip() =="Z" and write_flag == 0:          
+            binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)))
+            binary_file.write("\n")             
+            data_pos_index="SKIP"
+            write_flag=1
+
+    if data_pos_index.split()[0].strip() == "SKIP":
+        skip_count+=1
+    if data_pos_index.split()[0] =="SKIP" and skip_count==9 and write_flag == 0:
+        data_pos_index="COLOR"
+        skip_count=0
+        write_flag=1
+
+        #Add Material to buffer
+        current_material=str(temp_string)        
+        material_buffer+=current_material + " "
+
+        if current_material != old_material:
+            old_material=current_material
+            material_list+=current_material + " "
+            print("Found Material"+ Fore.GREEN + "[RAW: " + current_material + " ]" +Style.RESET_ALL)
+        data_pos_index="POS X"
+
+    write_flag=0
+    #print(data_pos_index + str(skip_count))
+
+data_pos_index="NORM X"
+#Write Normal Data
+normal_offset=12
+for long_index in range(int(vertex_count*vertex_buffer_block_size/4)-normal_offset):
+
+    temp_string=""
+    #for each byte
+    for temp_index in range(8):
+        #collect one double from the string
+        temp_string+=vertex_buffer[long_index*8+temp_index+normal_offset]
+     
+    if data_pos_index.split()[0].strip() =="NORM":    
+        if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
             binary_file.write("vn ")
+            binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)))
+            binary_file.write(" ")           
+            data_pos_index="NORM Y"
+            write_flag=1
+        if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:
+            binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)))
+            binary_file.write(" ")           
+            data_pos_index="NORM Z"
+            write_flag=1
+        if data_pos_index.split()[1].strip() =="Z" and write_flag == 0:
+            binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)))
+            binary_file.write("\n")           
+            data_pos_index="SKIP"
+            write_flag=1
+    if data_pos_index.split()[0] =="SKIP":
+        skip_count+=1
+    if data_pos_index.split()[0] =="SKIP" and skip_count==9:
+        data_pos_index="NORM X"
+        skip_count=0
+    write_flag=0
+
+
+        
+
+
+
+
+
+
+
+
+
+print("DEBUG! TEST: "+ Fore.RED + "[OK]" +Style.RESET_ALL)
+
+print("DEBUG! END NEW ROUTINE: "+ Fore.RED + "[OK]" +Style.RESET_ALL)
+####################################################################
+####################################################################
+
+
 
 
 
@@ -317,13 +409,14 @@ for byte in index_buffer:
 
 
 
-binary_file.close               
+binary_file.close        
+material_file.close        
 
 
 
 
 
-print("Script Complete")
+#print("Script Complete")
 asset_file.close
 
 
