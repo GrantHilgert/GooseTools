@@ -22,6 +22,7 @@ def get_material_name(raw_material_data):
     return "material_"+str(raw_material_data)
 
 
+
 #open asset file from command line
 asset_file = open(sys.argv[1], "r")
 
@@ -175,7 +176,7 @@ material_count=0
 ####################################################################
 #New .OBJ and .MTL Creation Routine
 
-print("Vertex Buffer Array Len "+ Fore.RED +str(len(vertex_buffer)/44) +Style.RESET_ALL)
+
 
 # 11 Double file structure
 # long 1: X
@@ -300,20 +301,7 @@ for long_index in range(int(vertex_count*vertex_buffer_block_size/4)-normal_offs
 
 #End New Normal Write Routine
 ####################################################################
-
-
-
-
-
-
-
-
-print("DEBUG! TEST: "+ Fore.RED + "[OK]" +Style.RESET_ALL)
-
-print("DEBUG! END NEW ROUTINE: "+ Fore.RED + "[OK]" +Style.RESET_ALL)
-
-####################################################################
-
+#Begin Face Write
 
 
 
@@ -321,6 +309,13 @@ print("DEBUG! END NEW ROUTINE: "+ Fore.RED + "[OK]" +Style.RESET_ALL)
 
 
 binary_file.write("g " + str(asset_name) + "_0\n")
+
+
+
+
+current_face_color=""
+old_face_color=""
+
 
 
 
@@ -398,6 +393,17 @@ for byte in index_buffer:
             pos_c=int((pos_c_msb+pos_c_lsb),16)+1
 
 
+            if material_buffer.split()[pos_a] == material_buffer.split()[pos_b]:
+                current_material=material_buffer.split()[pos_a]
+            elif material_buffer.split()[pos_a] == material_buffer.split()[pos_c]
+                current_material=material_buffer.split()[pos_a]
+            elif material_buffer.split()[pos_b] == material_buffer.split()[pos_c]
+                current_material=material_buffer.split()[pos_b]
+            elif material_buffer.split()[pos_a] == material_buffer.split()[pos_c]
+                current_material=material_buffer.split()[pos_b]                  
+
+
+  
 
 
 
