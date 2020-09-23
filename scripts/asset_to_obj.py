@@ -17,6 +17,10 @@ print("Written by Grant Hilgert")
 print("September 2020")
 
 
+def get_material_name(raw_material_data):
+
+    return "material_"+str(raw_material_data)
+
 
 #open asset file from command line
 asset_file = open(sys.argv[1], "r")
@@ -124,14 +128,16 @@ binary_file = open(sys.argv[1].split(".")[0]+".obj", "w")
 material_file = open(sys.argv[1].split(".")[0]+".mtl", "w")
 
 #Write Object File Header
-binary_file.write("#GooseTools Model Extractor V." + str(major) + "." + str(minor))
-binary_file.write("\n#https://github.com/GrantHilgert/GooseTools\n")
-#Write Material File Header
-material_file.write("#GooseTools Model Extractor V." + str(major) + "." + str(minor))
-material_file.write("\n#https://github.com/GrantHilgert/GooseTools\n")
+binary_file.write("# GooseTools Model Extractor V." + str(major) + "." + str(minor))
+binary_file.write("\n# https://github.com/GrantHilgert/GooseTools\n")
 
 
 
+#Write Material defintion to Object file
+
+
+mtllib_file_name=sys.argv[1].split("\\")[len(sys.argv[1].split("\\"))-1].split(".")[0]
+binary_file.write("mtllib " + str(mtllib_file_name) + ".mtl\n")
 
 
 bar = progressbar.ProgressBar(max_value=vertex_buffer_size*2+len(index_buffer)+vertex_count*24)
@@ -248,6 +254,12 @@ for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
     write_flag=0
     #print(data_pos_index + str(skip_count))
 
+
+#End New Vertex Write and Color Extraction Routine
+####################################################################
+#Being New Normal Write Routine
+
+
 data_pos_index="NORM X"
 #Write Normal Data
 normal_offset=12
@@ -286,6 +298,8 @@ for long_index in range(int(vertex_count*vertex_buffer_block_size/4)-normal_offs
 
         
 
+#End New Normal Write Routine
+####################################################################
 
 
 
@@ -297,7 +311,7 @@ for long_index in range(int(vertex_count*vertex_buffer_block_size/4)-normal_offs
 print("DEBUG! TEST: "+ Fore.RED + "[OK]" +Style.RESET_ALL)
 
 print("DEBUG! END NEW ROUTINE: "+ Fore.RED + "[OK]" +Style.RESET_ALL)
-####################################################################
+
 ####################################################################
 
 
@@ -405,6 +419,55 @@ for byte in index_buffer:
 
     progress_bar_count+=1
     bar.update(progress_bar_count)
+
+
+
+
+
+
+
+
+
+#Write Material FIle
+
+#Write Material File Header
+material_file.write("# GooseTools Model Extractor V." + str(major) + "." + str(minor))
+material_file.write("\n# https://github.com/GrantHilgert/GooseTools\n")
+material_file.write("# Material Count: "+ str(len(material_list.split()))+"\n")
+material_file.write("\n")
+
+
+for material_index in range(len(material_list.split())):
+    material_file.write("# Raw Material: "+ str(material_list.split()[material_index])+"\n")
+    
+    material_file.write("newmtl "+ get_material_name(material_list.split()[material_index]) +"\n")
+    material_file.write("Ns "+ "???" +"\n")
+    material_file.write("Ka "+ "???" +"\n")
+    material_file.write("Kd "+ "???" +"\n")
+    material_file.write("Ks "+ "???" +"\n")
+    material_file.write("Ke "+ "???" +"\n")
+    material_file.write("Ni "+ "???" +"\n")
+    material_file.write("d "+ "???" +"\n")
+    material_file.write("illum "+ "???" +"\n")
+    material_file.write("\n")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
