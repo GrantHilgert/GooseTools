@@ -19,10 +19,12 @@ print("September 2020")
 
 def get_material_name(raw_material_data):
 
-    return "material_"+str(raw_material_data)
+    return "material_"+ str(material_count_index)
 
 
 
+material_count_index=0
+material_count=0
 #open asset file from command line
 asset_file = open(sys.argv[1], "r")
 
@@ -264,13 +266,13 @@ for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
 data_pos_index="NORM X"
 #Write Normal Data
 normal_offset=12
-for long_index in range(int(vertex_count*vertex_buffer_block_size/4)-normal_offset):
+for long_index in range(int(vertex_count*vertex_buffer_block_size/4)-normal_offset+1):
 
     temp_string=""
     #for each byte
     for temp_index in range(8):
         #collect one double from the string
-        temp_string+=vertex_buffer[long_index*8+temp_index+normal_offset]
+        temp_string+=vertex_buffer[long_index*8+temp_index+normal_offset*2]
      
     if data_pos_index.split()[0].strip() =="NORM":    
         if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
@@ -404,6 +406,7 @@ for byte in index_buffer:
 
             if current_material != old_material:
                 old_material=current_material
+                material_count_index+=1
                 print("Writting Material: "+ Fore.GREEN + "[ "+ current_material + " ]" +Style.RESET_ALL)
                 binary_file.write("usemtl " + get_material_name(current_material)+"\n")
 
