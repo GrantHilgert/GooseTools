@@ -1,6 +1,6 @@
 #GooseTools Asset to .Obj Converter
 major=0
-minor=3
+minor=4
 
 import sys
 from colorama import Fore, Back, Style, init
@@ -14,7 +14,7 @@ init()
 print("Untitled Goose Game Asset to OBJ converter")
 print("Version: " + str(major) + "." + str(minor))
 print("Written by Grant Hilgert")
-
+print("September 2020")
 
 
 
@@ -31,24 +31,81 @@ vertex_buffer='NA'
 vertex_buffer_size='NA'
 vertex_buffer_block_size='NA'
 
+
+bind_pose_buffer=''
+bind_pose_flag=0
+bind_pose_complete=0
+
+bone_name_hash=""
+root_bone_name_hash=""
+
+
 count=0
 #comb through file, line by line
 print("Reading File...")
 for line in YAML_LINE: 
     #print("Line{}: {}".format(count, line.strip()))
+    
+    ##############BIND POSE PARSER############
+        #Copy Bind Pose Data
+    if "m_BindPose:" in line:
+        if "m_BindPose: []" in line:
+            print("Bind Pose Buffer"+ Fore.YELLOW + "[NO DATA]" +Style.RESET_ALL)           
+        else:
+            bind_pose_flag=1
+
+    if "m_BoneNameHashes:" in line:
+        if len(line.strip().split(":")) > 1:
+            bone_name_hash=str(line.strip().split(":")[1]).strip()
+            bind_pose_complete=0
+            print("Bone Name Hashes: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
+        elif bind_pose_flag == 1 and len(line.split(":")) == 1:
+            print("Pose Binding Data"+ Fore.RED + "[FAIL]" +Style.RESET_ALL)     
+
+    if "m_RootBoneNameHash:" in line:
+        if line.strip().split(":")[1].strip() != str(0):
+            root_bone_name_hash=str(line.strip().split(":")[1]).strip()
+            print("Root Bone Name Hashes: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
+
+        else:
+            print("Root Bone Name Hashes: "+ Fore.YELLOW + "[NO DATA]" +Style.RESET_ALL)  
+
+    
+    #Name of Asset File
     if "m_Name:" in line:
         asset_name=str(line.split(":", maxsplit=1)[1].strip())
+        print("Asset Name "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
+    
+    #Number of Vertexs
     if "m_VertexCount:" in line:
         vertex_count=int(line.split(":", maxsplit=1)[1].strip())
+        print("Vertex Count"+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
+    
+
+    #index Buffer size
     if "indexCount" in line:
         index_count=int(line.split(":", maxsplit=1)[1].strip())
+        print("Index Count"+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
+    #Copy Index Buffer
     if "m_IndexBuffer:" in line:
         index_buffer+=str(line.split(":", maxsplit=1)[1].strip())
+    
+        #Vertex Buffer Size
     if "m_DataSize:" in line:
         vertex_buffer_size=int(line.split(":", maxsplit=1)[1].strip())
+    
+    #Copy Vertex Buffer 
     if "_typelessdata:" in line:
         vertex_buffer=str(line.split(":", maxsplit=1)[1].strip())
-    count+=1
+    count+=1    #Copy Vertex Buffer 
+    
+    #Copy Bind Pose Data
+    if "m_BindPose:" in line:
+        
+
+
+
+        vertex_buffer=str(line.split(":", maxsplit=1)[1].strip())
 
 print("Extracted Header")
 print("Asset Name: "+Fore.GREEN + str(asset_name)+Style.RESET_ALL)
@@ -57,13 +114,13 @@ print("Vertexs: "+Fore.GREEN +str(vertex_count)+Style.RESET_ALL)
 print("Vertex Buffer Size: "+ Fore.GREEN +str(vertex_buffer_size)+Style.RESET_ALL)
 vertex_buffer_block_size=(vertex_buffer_size/vertex_count)
 print("Vertex Buffer Block Size: " +Fore.GREEN+ str(vertex_buffer_block_size)+Style.RESET_ALL)
-print("Raw Buffers")
-print("INDEX BUFFER: " + Fore.RED + str(index_buffer)+Style.RESET_ALL)
-print("VERTEX BUFFER: "+ Fore.RED + str(vertex_buffer)+Style.RESET_ALL)
+#print("Raw Buffers")
+#print("INDEX BUFFER: " + Fore.RED + str(index_buffer)+Style.RESET_ALL)
+#print("VERTEX BUFFER: "+ Fore.RED + str(vertex_buffer)+Style.RESET_ALL)
 
 
 
-binary_file = open("temp_obj.obj", "w")
+binary_file = open(sys.argv[1].split(".")[0]+str(asset_name)+".obj", "w")
 bar = progressbar.ProgressBar(max_value=vertex_buffer_size*2+len(index_buffer)+vertex_count*24)
 progress_bar_count=0
 byte_count=0
