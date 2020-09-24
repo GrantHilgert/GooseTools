@@ -1,6 +1,6 @@
 #GooseTools Asset to .Obj Converter
 major=0
-minor=4
+minor=5
 
 import sys
 from colorama import Fore, Back, Style, init
@@ -19,7 +19,7 @@ print("September 2020")
 
 def get_material_name(raw_material_data):
 
-    return "material_"+ str(material_count_index)
+    return "ugg_material.00"+ str(material_count_index)
 
 
 
@@ -210,7 +210,7 @@ skip_count=0
 #Dont write on the same loop
 write_flag=0
 #Write Vertex Data and collect material data at the same time to save time
-
+print("VERTEX RANGE: " + str(int(vertex_count*vertex_buffer_block_size/4)))
 for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
     #print(str(long_index))
     temp_string=""
@@ -266,14 +266,29 @@ for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
 data_pos_index="NORM X"
 #Write Normal Data
 normal_offset=12
-for long_index in range(int(vertex_count*vertex_buffer_block_size/4)-normal_offset+1):
+print("NORMAL RANGE: " + str(int(vertex_count*vertex_buffer_block_size/4)))
+for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
 
     temp_string=""
     #for each byte
     for temp_index in range(8):
         #collect one double from the string
-        temp_string+=vertex_buffer[long_index*8+temp_index+normal_offset*2]
-     
+        temp_string+=vertex_buffer[long_index*8+temp_index]
+ 
+        #SKIP the Vertex Data this round
+    if data_pos_index.split()[0].strip() =="POS":    
+        if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
+            data_pos_index="POS Y"
+            write_flag=1
+        if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:     
+            data_pos_index="POS Z"
+            write_flag=1
+        if data_pos_index.split()[1].strip() =="Z" and write_flag == 0:                     
+            data_pos_index="NORM X"
+            write_flag=1
+
+
+            #write the normals instead
     if data_pos_index.split()[0].strip() =="NORM":    
         if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
             binary_file.write("vn ")
@@ -293,8 +308,8 @@ for long_index in range(int(vertex_count*vertex_buffer_block_size/4)-normal_offs
             write_flag=1
     if data_pos_index.split()[0] =="SKIP":
         skip_count+=1
-    if data_pos_index.split()[0] =="SKIP" and skip_count==9:
-        data_pos_index="NORM X"
+    if data_pos_index.split()[0] =="SKIP" and skip_count==6:
+        data_pos_index="POS X"
         skip_count=0
     write_flag=0
 
@@ -447,19 +462,36 @@ material_file.write("\n# https://github.com/GrantHilgert/GooseTools\n")
 material_file.write("# Material Count: "+ str(len(material_list.split()))+"\n")
 material_file.write("\n")
 
-
+material_count_index=0
 for material_index in range(len(material_list.split())):
-    material_file.write("# Raw Material: "+ str(material_list.split()[material_index])+"\n")
+    
+
+
+
+    kd_red_hex=str(material_list.split()[material_index])[0]+str(material_list.split()[material_index])[1]
+    kd_green_hex=str(material_list.split()[material_index])[2]+str(material_list.split()[material_index])[3]
+    kd_blue_hex=str(material_list.split()[material_index])[4]+str(material_list.split()[material_index])[5]
+
+
+    print(kd_red_hex + " " + kd_green_hex + " " + kd_blue_hex)
+
+    kd_red=(int(kd_red_hex,16))/255
+    kd_green=(int(kd_green_hex,16))/255
+    kd_blue=(int(kd_blue_hex,16))/255
+    print(str(kd_red) + " " + str(kd_green) + " " + str(kd_blue))
+
+    material_count_index+=1
+    #material_file.write("# Raw Material: "+ str(material_list.split()[material_index])+"\n")
     
     material_file.write("newmtl "+ get_material_name(material_list.split()[material_index]) +"\n")
-    material_file.write("Ns "+ "???" +"\n")
-    material_file.write("Ka "+ "???" +"\n")
-    material_file.write("Kd "+ "???" +"\n")
-    material_file.write("Ks "+ "???" +"\n")
-    material_file.write("Ke "+ "???" +"\n")
-    material_file.write("Ni "+ "???" +"\n")
-    material_file.write("d "+ "???" +"\n")
-    material_file.write("illum "+ "???" +"\n")
+    material_file.write("Ns 225.000000" +"\n")
+    material_file.write("Ka 1.000000 1.000000 1.000000\n")
+    material_file.write("Kd "+ str(format(kd_red,'.6f')) +" "+str(format(kd_green,'.6f')) +" "+ str(format(kd_blue,'.6f'))  +"\n")
+    material_file.write("Ks 0.500000 0.500000 0.500000\n")
+    material_file.write("Ke 0.000000 0.000000 0.000000\n")
+    material_file.write("Ni 1.450000\n")
+    material_file.write("d 1.000000\n")
+    material_file.write("illum 2\n") 
     material_file.write("\n")
 
 print("Writting .MTL: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
@@ -469,8 +501,8 @@ print("Writting .MTL: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
 
 
 
-
-
+#Calculate kd
+binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)/255))
 
 
 
