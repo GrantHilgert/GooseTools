@@ -1,6 +1,6 @@
 #GooseTool's Obj to Asset Converter
 major=0
-minor=4
+minor=5
 
 import sys
 import os
@@ -10,6 +10,8 @@ import progressbar
 import struct
 import numpy as np
 from string import *
+import os.path
+from os import path
 
 
 
@@ -94,6 +96,13 @@ print("Vertex Buffer Block Size: " +Fore.GREEN+ str(vertex_buffer_block_size)+St
 
 
 
+
+
+
+
+
+
+
 ##################################################################################################
 #Preprocess Object File
 
@@ -109,7 +118,7 @@ obj_uv_count_preprocess=0
 obj_face_count_preprocess=0
 obj_name_count_preprocess=0
 
-
+obj_material_filename=""
 obj_material_path=""
 obj_material_count_preprocess=0
 obj_material_list=""
@@ -170,7 +179,7 @@ for line in OBJECT_LINE:
         obj_multi_obj_preprocess_flag=1
     
     if "mtllib" == line.split()[0]:
-        obj_material_path=line.split()[1]
+        obj_material_filename=line.split()[1]
     if "usemtl" == line.split()[0]:
         obj_material_list+=line.split()[1] + " "
         obj_material_count_preprocess+=1
@@ -199,7 +208,67 @@ obj_face_array_size_preprocess+=obj_face_count_preprocess
 object_file.seek(0)
 
 
-print("Preprocessing: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
+print("OBJ Preprocessing: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
+
+
+
+
+
+
+#Preprocess MTL file
+
+obj_material_path_ok=0
+obj_material_path=sys.argv[2].strip(str(sys.argv[2].split("\\")[len(sys.argv[2].split("\\"))-1])) + obj_material_filename
+mtl_material_count_preprocess=0
+mtl_material_buffer=""
+
+if path.exists(obj_material_path):
+    obj_material_path_ok=1
+    print("Preprocessing file : "+Fore.GREEN + str(obj_material_filename) +Style.RESET_ALL)
+    mtl_file = open(obj_material_path, "r")
+
+    #Parse the MTL file
+    MTL_LINE = mtl_file.readlines()
+    for line_mtl in MTL_LINE: 
+        if len(line_mtl.split()) > 0:    
+            if "newmtl" == line_mtl.split()[0]:
+                mtl_material_count_preprocess+=1
+
+    print("MTL Preprocessing: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)       
+    print(str(mtl_material_count_preprocess))
+
+    #Parse MTL file
+    mtl_kd_array= np.zeros(mtl_material_count_preprocess*3, dtype=float)
+    mtl_file.seek(0)
+    material_current=""
+    material_next=""
+
+    mtl_material_index=0
+    mtl_material_error_temp=0
+    for line_mtl in MTL_LINE: 
+        if len(line_mtl.split()) > 0:
+            if "newmtl" == line_mtl.split()[0].strip():
+                if line_mtl.split()[1].strip() in obj_material_list:
+                    mtl_material_index+=1
+                    mtl_material_error_temp=0
+                    mtl_material_buffer+=line_mtl.split()[1].strip() + " "
+                else: 
+                    print("Import Material from .mtl: "+Fore.RED + "[MATCH FAIL]" +Style.RESET_ALL)
+                    mtl_material_error_temp=1  
+            
+            if "Kd" == line_mtl.split()[0].strip() and mtl_material_error_temp == 0:
+                #store diffused colore data
+                mtl_kd_array[(mtl_material_index-1)*3]=line_mtl.split()[1].strip()
+                mtl_kd_array[(mtl_material_index-1)*3+1]=line_mtl.split()[2].strip()
+                mtl_kd_array[(mtl_material_index-1)*3+2]=line_mtl.split()[3].strip()
+
+                print("Import .mtl Material: "+Fore.GREEN + "[ " + str(obj_material_list.split()[mtl_material_index-1])+ " ]" +Style.RESET_ALL) 
+
+
+
+
+
+
 
 
 print(".Obj Info")
@@ -211,20 +280,6 @@ print("Total Vertex: "+Fore.GREEN +str(obj_vertex_array_size_preprocess)+Style.R
 print("Total Normal: "+Fore.GREEN +str(obj_normal_array_size_preprocess)+Style.RESET_ALL)
 print("Total UV: "+Fore.GREEN +str(obj_uv_array_size_preprocess)+Style.RESET_ALL)
 print("Total Face: "+Fore.GREEN +str(obj_face_array_size_preprocess)+Style.RESET_ALL)
-
-
-
-
-#Preprocess MTL File
-
-obj_material_path_ok=0
-
-
-
-
-
-
-
 
 
 
@@ -262,13 +317,13 @@ error_flag=0
 #Verticies
 #my indexing method breaks on position 0
 obj_vertex_array= np.zeros((obj_count_preprocess*obj_vertex_array_size_preprocess)*3, dtype=float)
-obj_vertex_count_v=0
+
 
 
 
 
 #Normals
-obj_vertex_count_vn=0
+
 obj_normal_array= np.zeros((obj_count_preprocess*obj_normal_array_size_preprocess)*3, dtype=float)
 
 #UV
@@ -276,8 +331,15 @@ obj_normal_array= np.zeros((obj_count_preprocess*obj_normal_array_size_preproces
 obj_uv_array= np.zeros((obj_count_preprocess*obj_uv_array_size_preprocess)*3, dtype=float)
 
 #Faces
-obj_vertex_count_f=0
+
 obj_face_array= np.zeros((obj_count_preprocess*obj_face_array_size_preprocess)*3, dtype=int)
+
+
+#Colors
+
+obj_color_array= np.zeros((obj_count_preprocess*obj_vertex_array_size_preprocess)*3, dtype=float)
+
+
 #Object Header Information
 obj_vert_count=0
 obj_index_cound=0
@@ -285,11 +347,16 @@ obj_g1=''
 obj_g2=''
 
 
-obj_next_index=0
+obj_next_index=1
 object_index=0
 
 debug_count=0
 
+
+
+
+#reset color index
+mtl_material_index=0
 #bar = progressbar.ProgressBar(max_value=obj_line_count_preprocess)
 #progress_bar_count=0
 #Read file line by line
@@ -302,21 +369,26 @@ for line in OBJECT_LINE:
         #print(str(debug_count))
         #Check if we are at the next object from the list we compiled during preprocessing
         
-        if ("o" in line.split()[0] or "g" in line.split()[0]) and  obj_name.split()[obj_next_index].strip() == line.split()[1].strip():
-            #print(str(obj_name.split()[obj_next_index].strip())+" == "+str(line.split()[1].strip()))
-            print("Setting New Object: "+Fore.GREEN + "["+obj_name.split()[obj_next_index].strip() +"]"+Style.RESET_ALL)
-            object_index=obj_next_index
-            obj_next_index+=1
-            obj_normal_count=0
-            obj_vertex_count=0
-            obj_uv_count=0
-            obj_s_value=0
-            obj_face_material='default'
+        if ("o" in line.split()[0] or "g" in line.split()[0]):
+            if len(obj_name.split()) >= obj_next_index:
+                if obj_name.split()[obj_next_index-1].strip() == line.split()[1].strip():
+                    #print(str(obj_name.split()[obj_next_index].strip())+" == "+str(line.split()[1].strip()))
+                    print("Setting New Object: "+Fore.GREEN + "["+obj_name.split()[obj_next_index-1].strip() +"]"+Style.RESET_ALL)
+                    object_index=obj_next_index
+                    obj_next_index+=1
+                    obj_normal_count=0
+                    obj_vertex_count=0
+                    obj_uv_count=0
+                    obj_s_value=0
+                    obj_face_material='default'
 
 
         #Collect Verticies
         elif "v" == line.split()[0]:
             #print("Reading Verticies")
+
+            print(str(object_index*obj_vertex_count*3))
+
             obj_vertex_array[object_index*obj_vertex_count*3]=float(str(line.split()[1]))
             obj_vertex_array[object_index*obj_vertex_count*3+1]=float(str(line.split()[2]))
             obj_vertex_array[object_index*obj_vertex_count*3+2]=float(str(line.split()[3]))
@@ -350,11 +422,16 @@ for line in OBJECT_LINE:
 
         #Set Material
         elif "usemtl" == line.split()[0]: 
-            obj_face_material=str(line.split()[1])
-            print("Using Material: "+ Fore.GREEN + str(line.split()[1]) +Style.RESET_ALL)
-                    #Set Material
+
+            if str(line.split()[1]).strip() in mtl_material_buffer:
+                print("Linking Face to Material: "+ Fore.GREEN + str(line.split()[1]) +Style.RESET_ALL)
+                obj_face_material=str(line.split()[1])
+                mtl_material_index+=1
+            else:
+                print("Failed to link Face to Material: "+ Fore.RED + str(line.split()[1]) +Style.RESET_ALL)
+
         elif "mtllib" == line.split()[0]: 
-            if obj_material_path == line.split()[1] and obj_material_path_ok == 1:
+            if obj_material_filename == line.split()[1] and obj_material_path_ok == 1:
                 print("Using .MTL file: "+ Fore.GREEN + str(obj_material_path) +Style.RESET_ALL)
             else:
                 print("Use .MTL file: "+ Fore.RED + "[FAIL]" +Style.RESET_ALL)
@@ -368,17 +445,45 @@ for line in OBJECT_LINE:
 
         elif "f" == line.split()[0]: 
             #print("Reading Faces")        
-            f_found=1
+
 
             face_buffer=line.split()
             data1=face_buffer[1].split("/")
             data2=face_buffer[2].split("/")
             data3=face_buffer[3].split("/")
 
+
+
+
+
+
+
+
+
             
-            obj_face_array[obj_vertex_count_f*3]=int(data1[0])
-            obj_face_array[obj_vertex_count_f*3+1]=int(data2[0])
-            obj_face_array[obj_vertex_count_f*3+2]=int(data3[0])
+            obj_face_array[obj_face_count*3]=int(data1[0])
+            obj_face_array[obj_face_count*3+1]=int(data2[0])
+            obj_face_array[obj_face_count*3+2]=int(data3[0])
+
+            #print(str((int(data1[0])-1)*3) +"=="+ str(mtl_kd_array[(mtl_material_index-1)*3]))
+            #Write Vertex Color Data
+            #print(str(mtl_kd_array[(mtl_material_index-1)*3]))
+            obj_color_array[(int(data1[0])-1)*3]=mtl_kd_array[(mtl_material_index-1)*3]
+            obj_color_array[(int(data1[0])-1)*3+1]=mtl_kd_array[(mtl_material_index-1)*3+1]
+            obj_color_array[(int(data1[0])-1)*3+2]=mtl_kd_array[(mtl_material_index-1)*3+2]
+
+            #Write Vertex Color Data
+            obj_color_array[(int(data2[0])-1)*3]=mtl_kd_array[(mtl_material_index-1)*3]
+            obj_color_array[(int(data2[0])-1)*3+1]=mtl_kd_array[(mtl_material_index-1)*3+1]
+            obj_color_array[(int(data2[0])-1)*3+2]=mtl_kd_array[(mtl_material_index-1)*3+2]
+
+
+            #Write Vertex Color Data
+            obj_color_array[(int(data3[0])-1)*3]=mtl_kd_array[(mtl_material_index-1)*3]
+            obj_color_array[(int(data3[0])-1)*3+1]=mtl_kd_array[(mtl_material_index-1)*3+1]
+            obj_color_array[(int(data3[0])-1)*3+2]=mtl_kd_array[(mtl_material_index-1)*3+2]
+
+
 
             #obj_face_array[obj_vertex_count_f*3]=int(str(line.split("/")[5]))
             #obj_face_array[obj_vertex_count_f*3+1]=int(str(line.split("/")[3]))
@@ -404,21 +509,20 @@ for line in OBJECT_LINE:
 
     
 print("Object Info")
-print("Header Information: \n"+Fore.GREEN + str(obj_header_text_preprocess)+Style.RESET_ALL)
 print("Number of Objects: "+Fore.GREEN + str(obj_count_preprocess)+Style.RESET_ALL)
 for object_num in range(obj_count_preprocess):
     print("#######################################################")
     print("Object Number: " + str(object_num+1))
     print("Object Name: "+Fore.GREEN + str(obj_g1)+Style.RESET_ALL)
     print("Material: "+Fore.GREEN + str(obj_g2)+Style.RESET_ALL)
-    print("Total Vertexs(v): "+Fore.GREEN +str(obj_vertex_count_v)+Style.RESET_ALL)
-    print("Total Normal(vn): "+Fore.GREEN +str(obj_vertex_count_vn)+Style.RESET_ALL)
-    print("Total Faces(f): "+Fore.GREEN +str(obj_vertex_count_f*3)+Style.RESET_ALL)
+    print("Total Vertexs(v): "+Fore.GREEN +str(obj_vertex_count_preprocess)+Style.RESET_ALL)
+    print("Total Normal(vn): "+Fore.GREEN +str(obj_normal_count_preprocess)+Style.RESET_ALL)
+    print("Total Faces(f): "+Fore.GREEN +str(obj_face_count_preprocess)+Style.RESET_ALL)
 
 print("#######################################################")
 print("Vertex Data")
-#for vertex_data in range(obj_vertex_count_v):
-    #print("Vertex: " + str(vertex_data) + " X: " + str(obj_vertex_array[vertex_data*3]) + " Y: " + str(obj_vertex_array[vertex_data*3+1]) + " Z: " + str(obj_vertex_array[vertex_data*3+2]))
+for vertex_data in range(obj_vertex_count):
+    print("Vertex: " + str(vertex_data) + " X: " + str(obj_vertex_array[vertex_data*3]) + " Y: " + str(obj_vertex_array[vertex_data*3+1]) + " Z: " + str(obj_vertex_array[vertex_data*3+2]))
 #for vertex_data in range(obj_vertex_count_vn):
     #print("Normal: " + str(vertex_data) + " X: " + str(obj_normal_array[vertex_data*3]) + " Y: " + str(obj_normal_array[vertex_data*3+1]) + " Z: " + str(obj_normal_array[vertex_data*3+2]))
 #for vertex_data in range(obj_vertex_count_f):
@@ -428,37 +532,6 @@ print("Vertex Data")
 
 
 
-#Verify data
-
-#Verify Asset Name
-if asset_name == obj_g1:
-    print("Asset Name: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
-else:
-    print("Asset Name: "+Fore.RED + "[FAIL]" +Style.RESET_ALL)
-    #error_flag=1
-
-#Verify Vertex Count
-if vertex_count == obj_vertex_count_v:
-    print("Vertex Data: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
-else:
-    print("Vertex Data: "+Fore.RED + "[FAIL]" +Style.RESET_ALL)
-    #error_flag=1
-
-#Verify Normal Count
-if vertex_count == obj_vertex_count_vn:
-    print("Normal Data: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
-else:
-    print("Normal Data: "+Fore.RED + "[FAIL]" +Style.RESET_ALL)
-    #no normals
-    #error_flag=1
-
-#Verify Face Count
-if index_count == obj_vertex_count_f*3:
-    print("Face Data: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
-else:
-    print("Face Data: "+Fore.RED + "[FAIL]" +Style.RESET_ALL)
-    #error_flag=1
-
 
 
 
@@ -467,7 +540,11 @@ progress_bar_count=0
 
 if error_flag == 0:
 #Create new Unity Asset File
-    new_asset = open("compiled_asset_"+str(obj_g1)+".asset", "w")
+
+
+    new_asset_file_name=str(sys.argv[2]).split(".")[0] + "_GooseTools_Compiled"+str(obj_g1)+".asset"
+    print(new_asset_file_name)
+    new_asset = open(new_asset_file_name, "w")
 
     #return to beggining of file
     asset_file.seek(0)
@@ -477,19 +554,19 @@ if error_flag == 0:
             new_asset.write("  m_Name: "+ asset_name+ "\n")
             print("Writting Asset Name: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
         elif "m_VertexCount:" in line:
-            new_asset.write("    m_VertexCount: "+ str(int(obj_vertex_count_v))+ "\n")
+            new_asset.write("    m_VertexCount: "+ str(int(obj_vertex_count_preprocess))+ "\n")
             print("Writting Vertex Count Main: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
         elif "    vertexCount: " in line:
-            new_asset.write("    vertexCount: "+ str(int(obj_vertex_count_v))+ "\n")
+            new_asset.write("    vertexCount: "+ str(int(obj_vertex_count_preprocess))+ "\n")
             print("Writting Vertex Count Sub: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
 
         elif "indexCount" in line:
-            new_asset.write("    indexCount: "+ str(int(obj_vertex_count_f*3))+ "\n")
-            print("Writting Index COunt: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
+            new_asset.write("    indexCount: "+ str(obj_face_count_preprocess*3)+ "\n")
+            print("Writting Index Count: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
         elif "m_IndexBuffer:" in line:
-            print("Writting Index Buffer: "+Fore.RED + "[IN PROGRESS]" +Style.RESET_ALL)
+
             new_asset.write("  m_IndexBuffer: ")
-            for byte in range(obj_vertex_count_f):
+            for byte in range(obj_face_count_preprocess):
                 byte1 =format(obj_face_array[byte*3]-1,"04x")
                 #print("Byte1: " + str(byte1))
                 #print("First: " +str(byte1[:2]))
@@ -513,18 +590,19 @@ if error_flag == 0:
             print("Writting Index Buffer: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
 
         elif "m_DataSize:" in line:
-            new_asset.write("    m_DataSize: "+ str(obj_vertex_count_v*20)+"\n")
+            new_asset.write("    m_DataSize: "+ str(obj_vertex_count_preprocess*44)+"\n")
+            print("    m_DataSize: "+ str(obj_vertex_count_preprocess*44)+"\n")
             print("Writting Vertex Buffer Data Size: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
         elif "_typelessdata:" in line:
             print("Typeless Data")
             new_asset.write("    _typelessdata: ")
-            print("Writting Vertex Buffer: "+Fore.RED + "[IN PROGRESS]" +Style.RESET_ALL)
+
 
             #Default for now is 44 bytes
             loop_byte = vertex_buffer_block_size
             loop_count=0
             vertex_decode="POS"
-            for vertex_pointer in range(obj_vertex_count_v):
+            for vertex_pointer in range(obj_vertex_count_preprocess):
                 #print(str(vertex_pointer))
                 #Write Vertex
                 if vertex_decode=="POS":
@@ -563,32 +641,66 @@ if error_flag == 0:
                     #    new_asset.write(vertex_buffer[data_position+index])
                     new_asset.write("0000803F0000000000000000000080BF")                    
                     vertex_decode="COLOR"
-                    
+    
+
+
+
+
+
+#####################################################   
+#write color data
+
                 #Write Model Colors
                 if vertex_decode=="COLOR":
-                    #print("Writing COLOR: " + str(vertex_pointer)+" Loop: " + str(loop_count))
-                    #just copy from source asset since its not decoded yet
-                    data_position=int(vertex_pointer*vertex_buffer_block_size*2+80)
-
-                    temp_string=''
-                    #for index in range(8):
-                     #   temp_string+=vertex_buffer[data_position+index]
-                    #if temp_string in "ed5341ff":
-                     #   color_string="63AAC2FF"
-                     #   print("Replaced Color")
-                   # else:
-                     #   color_string=temp_string
 
 
 
-                    #new_asset.write(str(color_string))
 
-                    new_asset.write("63AAC2FF")
+
+                    color_red_hex=hex(int(obj_color_array[vertex_pointer*3]*255)).strip("0x")
+                    color_green_hex=hex(int(obj_color_array[vertex_pointer*3+1]*255)).strip("0x")
+                    color_blue_hex=hex(int(obj_color_array[vertex_pointer*3+2]*255)).strip("0x")
+    
+
+
+
+  
+
+
+
+                    if len(color_red_hex) == 1:
+                        color_red_hex= "0" + str(color_red_hex)
+                    if len(color_red_hex) == 0:
+                        color_red_hex= "00"
+
+
+                    if len(color_green_hex) == 1:
+                        color_green_hex= "0" + str(color_green_hex)
+                    if len(color_green_hex) == 0:
+                        color_green_hex= "00"
+
+                    if len(color_blue_hex) == 1:
+                        color_blue_hex= "0" + str(color_blue_hex)
+                    if len(color_blue_hex) == 0:
+                        color_blue_hex= "00"
+
+
+
+                    #print(color_red_hex + color_green_hex+ color_blue_hex + "FF")
+
+                    #default blue
+                    #new_asset.write("63AAC2FF")
+
+                    new_asset.write(str(color_red_hex) + str(color_green_hex)+ str(color_blue_hex) + "ff")
+
+
+
+
 
 
                     vertex_decode="POS"
-                    
-
+ #End write color                   
+#####################################################
 
 
 
@@ -619,8 +731,7 @@ if error_flag == 0:
 
         else:
             new_asset.write(line)
-        progress_bar_count+=1
-        bar.update(progress_bar_count)
+
 
 
 
@@ -634,7 +745,7 @@ if error_flag == 0:
 
 
 else:
-    print(Fore.RED + "SCript Terminated. One or more Errors has prevented the asset from compiling" +Style.RESET_ALL)
+    print(Fore.RED + "Script Terminated. One or more Errors has prevented the asset from compiling" +Style.RESET_ALL)
 
 
 
