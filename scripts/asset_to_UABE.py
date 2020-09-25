@@ -1,6 +1,6 @@
 #GooseTools Asset to UABE FIle Converter
 major=0
-minor=2
+minor=3
 
 import sys
 from colorama import Fore, Back, Style, init
@@ -39,6 +39,7 @@ init()
 print("Untitled Goose Game ASSET to UABE Resource")
 print("Version: " + str(major) + "." + str(minor))
 print("Written by Grant Hilgert")
+print("https://github.com/GrantHilgert/GooseTools")
 
 error_flag=0
 
@@ -366,7 +367,7 @@ progress_bar_count=0
 
 if error_flag == 0:
 #Create new UABE Asset Dump
-    UABE_asset_filename="UABE_compiled_asset_"+str(asset_name)+".txt"
+    UABE_asset_filename=str(sys.argv[1])+"_UABE.txt"
     print("Writing "+ UABE_asset_filename)
     UABE_asset = open(UABE_asset_filename, "w")
     progress_bar_count+=1
