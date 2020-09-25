@@ -361,6 +361,8 @@ pos_a=''
 pos_b=''
 pos_c=''
 
+for item in range(len(material_buffer.split())):
+    print("item " + str(item) + " : "+ material_buffer.split()[item])
 skip_first_word=1
 for byte in index_buffer:
     byte_count+=1
@@ -409,15 +411,15 @@ for byte in index_buffer:
             pos_b=int((pos_b_msb+pos_b_lsb),16)+1
             pos_c=int((pos_c_msb+pos_c_lsb),16)+1
 
-
-            if material_buffer.split()[pos_a] == material_buffer.split()[pos_b]:
-                current_material=material_buffer.split()[pos_a]
-            elif material_buffer.split()[pos_a] == material_buffer.split()[pos_c]:
-                current_material=material_buffer.split()[pos_a]
-            elif material_buffer.split()[pos_b] == material_buffer.split()[pos_c]:
-                current_material=material_buffer.split()[pos_b]
-            elif material_buffer.split()[pos_a] == material_buffer.split()[pos_c]:
-                current_material=material_buffer.split()[pos_b]                  
+            print(str(pos_a)+" "+str(pos_b))
+            if material_buffer.split()[pos_a-1] == material_buffer.split()[pos_b-1]:
+                current_material=material_buffer.split()[pos_a-1]
+            elif material_buffer.split()[pos_a-1] == material_buffer.split()[pos_c-1]:
+                current_material=material_buffer.split()[pos_a-1]
+            elif material_buffer.split()[pos_b-1] == material_buffer.split()[pos_c-1]:
+                current_material=material_buffer.split()[pos_b-1]
+            elif material_buffer.split()[pos_a-1] == material_buffer.split()[pos_c-1]:
+                current_material=material_buffer.split()[pos_b-1]                  
 
             if current_material != old_material:
                 old_material=current_material
@@ -484,14 +486,14 @@ for material_index in range(len(material_list.split())):
     #material_file.write("# Raw Material: "+ str(material_list.split()[material_index])+"\n")
     
     material_file.write("newmtl "+ get_material_name(material_list.split()[material_index]) +"\n")
-    material_file.write("Ns 225.000000" +"\n")
-    material_file.write("Ka 1.000000 1.000000 1.000000\n")
+    material_file.write("Ns 0.000000" +"\n")
+    material_file.write("Ka "+ str(format(kd_red,'.6f')) +" "+str(format(kd_green,'.6f')) +" "+ str(format(kd_blue,'.6f'))  +"\n")
     material_file.write("Kd "+ str(format(kd_red,'.6f')) +" "+str(format(kd_green,'.6f')) +" "+ str(format(kd_blue,'.6f'))  +"\n")
     material_file.write("Ks 0.500000 0.500000 0.500000\n")
     material_file.write("Ke 0.000000 0.000000 0.000000\n")
     material_file.write("Ni 1.450000\n")
     material_file.write("d 1.000000\n")
-    material_file.write("illum 2\n") 
+    material_file.write("illum 1\n") 
     material_file.write("\n")
 
 print("Writting .MTL: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
@@ -500,9 +502,6 @@ print("Writting .MTL: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
 
 
 
-
-#Calculate kd
-binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)/255))
 
 
 
