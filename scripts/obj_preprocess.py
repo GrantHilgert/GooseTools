@@ -1,6 +1,6 @@
 #Object PreProcessor
 major=0
-minor=2
+minor=3
 
 import sys
 from colorama import Fore, Back, Style, init
@@ -38,6 +38,11 @@ def replace_color(vertex_num,new_color):
 
 
     return "63aacsff"
+
+
+def get_material_name(raw_material_data):
+
+    return "ugg_material.00"+ str(material_count_index)
 
 init()
 
@@ -78,23 +83,104 @@ count=0
 
 #open Object file from command line
 object_file = open(sys.argv[1], "r")
-#Read file line by line
-OBJECT_LINE = object_file.readlines()
+
 
 #extract vertex buffer size
 obj_vertex_count_preprocess=0
 obj_normal_count_preprocess=0
 obj_uv_count_preprocess=0
 obj_face_count_preprocess=0
+obj_name_count_preprocess=0
+
+obj_material_filename=""
+obj_material_path=""
+obj_material_count_preprocess=0
+obj_material_list=""
+
+obj_header_text_preprocess=""
+obj_multi_obj_preprocess_flag=0
+obj_count_preprocess=1
+
+obj_vertex_count_array_preprocess=""
+obj_normal_count_array_preprocess=""
+obj_uv_count_array_preprocess=""
+obj_face_count_array_preprocess=""
+
+obj_name=""
+
+obj_line_count_preprocess=0
+
+
+obj_vertex_array_size_preprocess=0
+obj_normal_array_size_preprocess=0
+obj_uv_array_size_preprocess=0
+obj_face_array_size_preprocess=0
+
+#Read file line by line
+
+
+OBJECT_LINE = object_file.readlines()
+print("Preprocessing file : "+Fore.GREEN + str(sys.argv[1].split("\\")[len(sys.argv[1].split("\\"))-1]) +Style.RESET_ALL)
 for line in OBJECT_LINE:
-    if "v " in line:
+    
+    if "v" == line.split()[0] and obj_multi_obj_preprocess_flag == 1:
+        #Detect Multiple Objects.
+        obj_count_preprocess+=1
+        obj_vertex_count_array_preprocess+=str(obj_vertex_count_preprocess) + " "
+        obj_normal_count_array_preprocess+=str(obj_normal_count_preprocess) + " "
+        obj_uv_count_array_preprocess+=str(obj_uv_count_preprocess) + " "
+        obj_face_count_array_preprocess+=str(obj_face_count_preprocess) + " "
+        
+        obj_vertex_array_size_preprocess+=obj_vertex_count_preprocess
+        obj_normal_array_size_preprocess+=obj_normal_count_preprocess
+        obj_uv_array_size_preprocess+=obj_uv_count_preprocess
+        obj_face_array_size_preprocess+=obj_face_count_preprocess
+
+        obj_vertex_count_preprocess=0
+        obj_normal_count_preprocess=0
+        obj_uv_count_preprocess=0
+        obj_face_count_preprocess=0
+        obj_multi_obj_preprocess_flag=0
+
+
+        print("New Object Detected: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
+    if "v" == line.split()[0]:
         obj_vertex_count_preprocess+=1
-    if "vn " in line:
+    if "vn" in line.split()[0]:
         obj_normal_count_preprocess+=1
-    if "vt " in line:
+    if "vt" in line.split()[0]:
         obj_uv_count_preprocess+=1
-    if "f " in line:
+    if "f" in line.split()[0]:
         obj_face_count_preprocess+=1
+        obj_multi_obj_preprocess_flag=1
+    
+    if "mtllib" == line.split()[0]:
+        obj_material_filename=line.split()[1]
+    if "usemtl" == line.split()[0]:
+        obj_material_list+=line.split()[1] + " "
+        obj_material_count_preprocess+=1
+
+    if "o" == line.split()[0]:
+        obj_name+=line.split()[1] + " "
+        obj_name_count_preprocess+=1
+    
+    if obj_vertex_count_preprocess == 0 and obj_material_path == "":
+        obj_header_text_preprocess+=line
+    obj_line_count_preprocess+=1
+
+#Store Last Preprocess Values in Array
+obj_vertex_count_array_preprocess+=str(obj_vertex_count_preprocess)
+obj_normal_count_array_preprocess+=str(obj_normal_count_preprocess)
+obj_uv_count_array_preprocess+=str(obj_uv_count_preprocess)
+obj_face_count_array_preprocess+=str(obj_face_count_preprocess)
+
+#Store Last Preprocess Values
+obj_vertex_array_size_preprocess+=obj_vertex_count_preprocess
+obj_normal_array_size_preprocess+=obj_normal_count_preprocess
+obj_uv_array_size_preprocess+=obj_uv_count_preprocess
+obj_face_array_size_preprocess+=obj_face_count_preprocess
+
+
 print("Source Object file preprocessing: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
 
 print("Preprocess Vertex Count(v): "+Fore.GREEN +str(obj_vertex_count_preprocess)+Style.RESET_ALL)
@@ -158,10 +244,13 @@ face_temp_file = open("preprocess_temp.txt", "w")
 
 
 
+#materials
+material_buffer=""
+material_buffer_count=0
 
 
-
-
+current_material=""
+old_material=""
 
 #comb through file, line by line
 print("Reading Object File...")
@@ -202,17 +291,38 @@ for line in OBJECT_LINE:
             obj_uv_array[obj_uv_count*2]=float(str(line.split()[1]))
             obj_uv_array[obj_uv_count*2+1]=float(str(line.split()[2]))
             obj_uv_count+=1
+            
+        #collect material
+        elif "usemtl" in line.split()[0]:
+            current_material=line.split()[1]
+            if current_material != old_material:
+                old_material=current_material
+                print("Setting Material: " + Fore.GREEN + "[RAW: " + current_material + " ]" +Style.RESET_ALL)
 
         #collect Faces
         elif "f" in line.split()[0]:
+
+
             if len(line.split()) > 4 :
                 new_face_1=line.split()[1]+" "+line.split()[2]+" "+line.split()[3]
                 new_face_2=line.split()[1]+" "+line.split()[3]+" "+line.split()[4]
                 face_temp_file.write(str(new_face_1) + "\n")
                 face_temp_file.write(str(new_face_2) + "\n")
+                obj_face_count+=2               
+
+                #Write Face Materials    
+                material_buffer+=current_material + " " + current_material + " "
+                material_buffer_count+=2
+
+
+
             else:
                 face_temp_file.write(line.split(" ",1)[1])
-            obj_face_count+=1
+                obj_face_count+=1
+                #Write Face Materials  
+                material_buffer+=current_material + " "
+                material_buffer_count+=1
+
 
 
 
@@ -383,34 +493,91 @@ for line in FACE_LINE:
 
 new_face_temp_file.close()
 
-
+########################################################################################################
+#Write new processed .OBJ file.
 new_obj_file = open(str(sys.argv[1]).split(".")[0] + "_processed.obj", "w")
-new_obj_file.write("g " + str(obj_g1) + "\n")
+new_obj_file.write("# GooseTools .OBJ Preprocessor V." + str(major) + "." + str(minor))
+new_obj_file.write("\n# https://github.com/GrantHilgert/GooseTools\n")
 
+
+
+#########################
+#write Material file name
+new_obj_file.write("mtllib " + str(obj_material_filename) + "\n")
+
+#########################
+#Write .OBJ filename 
+new_obj_file.write("o " + str(obj_g1) + "\n")
+
+
+
+#########################
+#Write Vertex
 vertex_write_count=0
 for index in range(int(len(obj_vertex_array)/3)):
     new_obj_file.write("v " + str(obj_vertex_array[index*3]) + " "+ str(obj_vertex_array[index*3+1]) +" "+ str(obj_vertex_array[index*3+2]) + "\n")
     vertex_write_count+=1
-normal_write_count=0
+
+
+########################
+#Write Normals
 normal_write_count=0
 for index in range(int(len(obj_vertex_array)/3)):
     #print("Writing Normal: "+str(index)+"vn " + str(new_obj_normal_array[index*3]) + " "+ str(new_obj_normal_array[index*3+1]) +" "+ str(new_obj_normal_array[index*3+2]))
     new_obj_file.write("vn " + str(new_obj_normal_array[(index)*3]) + " "+ str(new_obj_normal_array[(index)*3+1]) +" "+ str(new_obj_normal_array[(index)*3+2]) + "\n")
     normal_write_count+=1
 
+
+
+########################
+#Write Object Face name?
 new_obj_file.write("g " + str(obj_g1) + "_0\n")
+
+
+
+
+
+
+########################
+#Write Face Material
+current_material=""
+old_material=""
+
+
+
+
+
+
+
+
+
+
 
 
 face_temp_file.close()
 
+material_buffer_index=0
+old_material=""
+current_material=""
+
 new_face_temp_file = open("face_temp.txt", "r")
-
-
 face_write_count=0
 NEW_FACE_LINE = new_face_temp_file.readlines()
+
 for line in NEW_FACE_LINE:
+    
+
+    current_material=material_buffer.split()[material_buffer_index].strip()
+    material_buffer_index+=1
+    #print(str(current_material))
+    if current_material != old_material:
+        old_material=current_material
+        print("Writting Material: "+ Fore.GREEN + "[ "+ current_material + " ]" +Style.RESET_ALL)
+        new_obj_file.write("usemtl " + current_material+"\n")
+
+
     new_obj_file.write("f " + str(line))
-    face_write_count=+1
+    face_write_count+=1
 
 
 
