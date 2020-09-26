@@ -4,30 +4,46 @@ Written by: Grant Hilgert
 Sepetember 2020
 
 
+Mesh Extraction and Reimportation Toolkit for Untitled Goose Game.
+Works with Utiny Ripper and UABE (Unity Asset Bundle Extractor)
+
+Description: This tool kit will allow you to modify in game 3D models. You can also completely replace the 3d model with your own .obj file. Colors are supported. 
+
+
+LATEST RELEASE- V1.00 RELEASE
+
+Version 1.00 Release Features:
+
+	-Convert Mesh .asset files into fully colored .obj and .mtl pair for easy import and modification with blender
+	-Convert fully colored .obj and .mtl pair into .asset file
+	-Convert .asset file into UABE (Unity Assit Bundle Extractor) dump file for easy import back into the game.
+	-Tutorials coming soon. See below for high level example.
+
+What Vaersion 1.00 Cannot do:
+	-Edit the goose or NPC (Gardeners, Shopkeeper, Neightbors, etc). This is planned for Version 1.20 with work already being done.
+	-Edit the map. Planned, no proof of concept
+	-Edit the task. Planned, no proof of concept
+
+Known bugs:
+	-Material Error when importing large and complete model. May need some extra preprocessing to sort the vertex by color. This error will result in you importing model having corrupt colors. If you export it again, you will have x10 the materials of your original model. This may be caused by the conversion of face materials used in object files to vertex colors used in the game. The face list is sorted and the vertex list are not. When exporting back out of the game, the extractor creates a new material each time the material changes. Since the list is not sorted, the material changes often resulting is many duplicate materials being created in the .obj file.
+	-There are probably other stuff. If you come across something, please report it.
+
 
 
 About: This is a series of scripts used to encode and decode Unity .asset files used in the Untitled Goose Game.
 This may work on other games. Let me know if you try! Feel free share your results/issues with me.
 
 
-V.0.01 -
-
-	Full Mesh Replacement Supported.
-	-Colors not currently supported. [They are next on the list]. 
-
-Current Bugs and Limitations:
-	-Still working on decoding color data. Currently all imported models will be blue. 
-	-Future goal to include a material defintion file when compiling
-	-You can change the color on line 470 of in obj_to_asset.py
-	-The goose and people arnt supported. They use a differemt file structure and have bones. Working on adding support.
-	-Preprocessing algorithm needs improvement to reduce loss.
 
 
 
 Required Dependencies:
 
-Untitled goose game for PC. 
-I havent tested this on other platforms 
+Pyton 3: The scripts are python.
+
+https://www.python.org/
+
+Untitled goose game for PC. Build on Windows 10. Sorry. 
 Please support developers of games you enjoy and aquire this legally.
 https://goose.game/
 
@@ -86,36 +102,20 @@ Modifying a 3D Model:
 
 
 
-
-
-
- 
-
+V.1.00
+	-Convert Mesh .asset files into fully colored .obj and .mtl pair for easy import and modification with blender
+	-Convert fully colored .obj and .mtl pair into .asset file
+	-Convert .asset file into UABE (Unity Assit Bundle Extractor) dump file for easy import back into the game.
+	-Material Error when importing large and complete model. May need some extra preprocessing to sort the vertex by color.
+V.0.02
+	-Added .object preprocessor to run on a model before you import it.
+	-convert square face geometry to triangls to match UGG .asset structure
+	-Uncompress mesh with 3 index Buffers into 1 single index buffer to match UGG .asset structure
+	-Fixed previous normal issue.
+	- Full mesh replacement supported. 
+	-You can import your own 3D model. Faces and models 
+	-All imported models are set to blue while I collect data.
+	-Future goal to compile models with color defintion file
 V.0.01
-
-- Added .object preprocessor to run on a model before you import it.
-	1) convert square face geometry to triangls to match UGG .asset structure
-	2) Uncompress mesh with 3 index Buffers into 1 single index buffer to match UGG .asset structure
-	3) Fixed previous normal issue.
-- Full mesh replacement supported. 
-	You can import your own 3D model. Faces and models 
-	All imported models are set to blue while I collect data.
-	Future goal to compile models with color defintion file
-
-
-V.0.01 - beta release
-Known issues and Limitations:
-
-	1)Normals Disabled: Blender does some type of compression on the normals in the obj file. 
+	-Normals Disabled: Blender does some type of compression on the normals in the obj file. 
 	Currently all normals are stripped from imported models which causes them to be sort of transparents.
-
-
-	2) I havent decoded how the colors are encoded yet. My attempts still crash the game.
-	As a result, you can only edit the models by changing the vertex positon.
-	You can not create addtional vertexs or faces at this time.
-
-3) You cant edit colors at this time
-
-4) Havent looked into bone structures
-##############################################################################################
-
