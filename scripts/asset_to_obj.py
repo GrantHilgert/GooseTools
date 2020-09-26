@@ -361,8 +361,8 @@ pos_a=''
 pos_b=''
 pos_c=''
 
-for item in range(len(material_buffer.split())):
-    print("item " + str(item) + " : "+ material_buffer.split()[item])
+#for item in range(len(material_buffer.split())):
+    #print("item " + str(item) + " : "+ material_buffer.split()[item])
 skip_first_word=1
 for byte in index_buffer:
     byte_count+=1
@@ -411,7 +411,7 @@ for byte in index_buffer:
             pos_b=int((pos_b_msb+pos_b_lsb),16)+1
             pos_c=int((pos_c_msb+pos_c_lsb),16)+1
 
-            print(str(pos_a)+" "+str(pos_b))
+            #print(str(pos_a)+" "+str(pos_b))
             if material_buffer.split()[pos_a-1] == material_buffer.split()[pos_b-1]:
                 current_material=material_buffer.split()[pos_a-1]
             elif material_buffer.split()[pos_a-1] == material_buffer.split()[pos_c-1]:
@@ -473,6 +473,7 @@ for material_index in range(len(material_list.split())):
     kd_red_hex=str(material_list.split()[material_index])[0]+str(material_list.split()[material_index])[1]
     kd_green_hex=str(material_list.split()[material_index])[2]+str(material_list.split()[material_index])[3]
     kd_blue_hex=str(material_list.split()[material_index])[4]+str(material_list.split()[material_index])[5]
+
 
 
     print(kd_red_hex + " " + kd_green_hex + " " + kd_blue_hex)
