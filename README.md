@@ -47,7 +47,7 @@ This may work on other games. Let me know if you try! Feel free share your resul
 
 **Required Dependencies:**
 
-1)Pyton 3: The scripts are python.
+1) Pyton 3: The scripts are python.
 
 https://www.python.org/
 
@@ -56,17 +56,17 @@ Please support developers of games you enjoy and aquire this legally.
 
 https://goose.game/
 
-2)To dump the UGG Unity .asset file.
+2) To dump the UGG Unity .asset file.
 Utiny Ripper
 
 https://github.com/mafaca/UtinyRipper
 
-3)For importing models into UGG Unity .asset files
+3) For importing models into UGG Unity .asset files
 Unity Asset Bundle Extractor
 
 https://github.com/DerPopo/UABE
 
-4)Your choice of 3D modeling Software. Must be able to edit .obj files
+4) Your choice of 3D modeling Software. Must be able to edit .obj files
 I use blender because it is free
 
 https://www.blender.org/
