@@ -10,22 +10,30 @@ Works with Utiny Ripper and UABE (Unity Asset Bundle Extractor)
 Description: This tool kit will allow you to modify in game 3D models. You can also completely replace the 3d model with your own .obj file. Colors are supported. 
 
 
-LATEST RELEASE- V1.00 RELEASE
+**LATEST RELEASE- V1.00 RELEASE**
 
 Version 1.00 Release Features:
 
 	-Convert Mesh .asset files into fully colored .obj and .mtl pair for easy import and modification with blender
+	
 	-Convert fully colored .obj and .mtl pair into .asset file
+	
 	-Convert .asset file into UABE (Unity Assit Bundle Extractor) dump file for easy import back into the game.
+	
 	-Tutorials coming soon. See below for high level example.
 
 What Vaersion 1.00 Cannot do:
+	
 	-Edit the goose or NPC (Gardeners, Shopkeeper, Neightbors, etc). This is planned for Version 1.20 with work already being done.
+	
 	-Edit the map. Planned, no proof of concept
+	
 	-Edit the task. Planned, no proof of concept
 
 Known bugs:
+	
 	-Material Error when importing large and complete model. May need some extra preprocessing to sort the vertex by color. This error will result in you importing model having corrupt colors. If you export it again, you will have x10 the materials of your original model. This may be caused by the conversion of face materials used in object files to vertex colors used in the game. The face list is sorted and the vertex list are not. When exporting back out of the game, the extractor creates a new material each time the material changes. Since the list is not sorted, the material changes often resulting is many duplicate materials being created in the .obj file.
+	
 	-There are probably other stuff. If you come across something, please report it.
 
 
@@ -37,29 +45,33 @@ This may work on other games. Let me know if you try! Feel free share your resul
 
 
 
-Required Dependencies:
+**Required Dependencies:**
 
-Pyton 3: The scripts are python.
+1)Pyton 3: The scripts are python.
 
 https://www.python.org/
 
 Untitled goose game for PC. Build on Windows 10. Sorry. 
 Please support developers of games you enjoy and aquire this legally.
+
 https://goose.game/
 
-To dump the UGG Unity .asset file.
+2)To dump the UGG Unity .asset file.
 Utiny Ripper
+
 https://github.com/mafaca/UtinyRipper
 
-For importing models into UGG Unity .asset files
+3)For importing models into UGG Unity .asset files
 Unity Asset Bundle Extractor
+
 https://github.com/DerPopo/UABE
 
-Your choice of 3D modeling Software. Must be able to edit .obj files
+4)Your choice of 3D modeling Software. Must be able to edit .obj files
 I use blender because it is free
+
 https://www.blender.org/
 
-Setup:
+**Setup:**
 
 1) Download GooseTools (This repository)
 2) Download Utiny Ripper
@@ -69,7 +81,7 @@ Setup:
 
 
 
-Modifying a 3D Model:
+**Modifying a 3D Model:**
 
 
 1) Create a dump of game files using Utiny Ripper
