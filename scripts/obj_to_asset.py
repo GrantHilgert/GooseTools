@@ -218,7 +218,7 @@ print("OBJ Preprocessing: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
 #Preprocess MTL file
 
 obj_material_path_ok=0
-obj_material_path=sys.argv[2].strip(str(sys.argv[2].split("\\")[len(sys.argv[2].split("\\"))-1])) + obj_material_filename
+obj_material_path=sys.argv[2].split(".")[0] + ".mtl"
 mtl_material_count_preprocess=0
 mtl_material_buffer=""
 
@@ -264,10 +264,11 @@ if path.exists(obj_material_path):
 
                 print("Import .mtl Material: "+Fore.GREEN + "[ " + str(obj_material_list.split()[mtl_material_index-1])+ " ]" +Style.RESET_ALL) 
 
+else:
 
+    print(".MTL File Not Found : "+Fore.RED + str(obj_material_path) +Style.RESET_ALL)
 
-
-
+print("DEBUG MATERIAL INDEX COUNT:" + str(mtl_material_index))
 
 
 
@@ -387,7 +388,7 @@ for line in OBJECT_LINE:
         elif "v" == line.split()[0]:
             #print("Reading Verticies")
 
-            print(str(object_index*obj_vertex_count*3))
+            #print(str(object_index*obj_vertex_count*3))
 
             obj_vertex_array[object_index*obj_vertex_count*3]=float(str(line.split()[1]))
             obj_vertex_array[object_index*obj_vertex_count*3+1]=float(str(line.split()[2]))
@@ -452,13 +453,11 @@ for line in OBJECT_LINE:
             data2=face_buffer[2].split("/")
             data3=face_buffer[3].split("/")
 
+            #print("FACE 1: " +str(int(data1[0])))
 
+            #print("FACE 2: " +str(int(data2[0])))
 
-
-
-
-
-
+            #print("FACE 3: " +str(int(data3[0])))
 
             
             obj_face_array[obj_face_count*3]=int(data1[0])
@@ -467,18 +466,20 @@ for line in OBJECT_LINE:
 
             #print(str((int(data1[0])-1)*3) +"=="+ str(mtl_kd_array[(mtl_material_index-1)*3]))
             #Write Vertex Color Data
-            #print(str(mtl_kd_array[(mtl_material_index-1)*3]))
+            
+
+            #Write Vertex Color Data for face 1
             obj_color_array[(int(data1[0])-1)*3]=mtl_kd_array[(mtl_material_index-1)*3]
             obj_color_array[(int(data1[0])-1)*3+1]=mtl_kd_array[(mtl_material_index-1)*3+1]
             obj_color_array[(int(data1[0])-1)*3+2]=mtl_kd_array[(mtl_material_index-1)*3+2]
 
-            #Write Vertex Color Data
+            #Write Vertex Color Data for face 2
             obj_color_array[(int(data2[0])-1)*3]=mtl_kd_array[(mtl_material_index-1)*3]
             obj_color_array[(int(data2[0])-1)*3+1]=mtl_kd_array[(mtl_material_index-1)*3+1]
             obj_color_array[(int(data2[0])-1)*3+2]=mtl_kd_array[(mtl_material_index-1)*3+2]
 
 
-            #Write Vertex Color Data
+            #Write Vertex Color Data for face 3
             obj_color_array[(int(data3[0])-1)*3]=mtl_kd_array[(mtl_material_index-1)*3]
             obj_color_array[(int(data3[0])-1)*3+1]=mtl_kd_array[(mtl_material_index-1)*3+1]
             obj_color_array[(int(data3[0])-1)*3+2]=mtl_kd_array[(mtl_material_index-1)*3+2]
@@ -520,9 +521,9 @@ for object_num in range(obj_count_preprocess):
     print("Total Faces(f): "+Fore.GREEN +str(obj_face_count_preprocess)+Style.RESET_ALL)
 
 print("#######################################################")
-print("Vertex Data")
-for vertex_data in range(obj_vertex_count):
-    print("Vertex: " + str(vertex_data) + " X: " + str(obj_vertex_array[vertex_data*3]) + " Y: " + str(obj_vertex_array[vertex_data*3+1]) + " Z: " + str(obj_vertex_array[vertex_data*3+2]))
+#print("Vertex Data")
+#for vertex_data in range(obj_vertex_count):
+   # print("Vertex: " + str(vertex_data) + " X: " + str(obj_vertex_array[vertex_data*3]) + " Y: " + str(obj_vertex_array[vertex_data*3+1]) + " Z: " + str(obj_vertex_array[vertex_data*3+2]))
 #for vertex_data in range(obj_vertex_count_vn):
     #print("Normal: " + str(vertex_data) + " X: " + str(obj_normal_array[vertex_data*3]) + " Y: " + str(obj_normal_array[vertex_data*3+1]) + " Z: " + str(obj_normal_array[vertex_data*3+2]))
 #for vertex_data in range(obj_vertex_count_f):
@@ -572,7 +573,7 @@ if error_flag == 0:
                 #print("First: " +str(byte1[:2]))
                 #print("Second: " +str(byte1[-2:]))
 
-                byte2 =format(obj_face_array[byte*+3+1]-1,"04x")
+                byte2 =format(obj_face_array[byte*3+1]-1,"04x")
                 #print("Byte2: " + str(byte2))
                 #print("First: " +str(byte2[:2]))
                 #print("Second: " +str(byte2[-2:]))
@@ -583,9 +584,24 @@ if error_flag == 0:
                 #print("second: " +str(byte3[-2:]))
 
                 #write first byte first
-                new_asset.write(str(byte1[-2:])+str(byte1[:2]))
-                new_asset.write(str(byte2[-2:])+str(byte2[:2]))
+
+
+
+
+
                 new_asset.write(str(byte3[-2:])+str(byte3[:2]))
+                new_asset.write(str(byte2[-2:])+str(byte2[:2]))
+                new_asset.write(str(byte1[-2:])+str(byte1[:2])) 
+
+
+
+                #Swapped face index buffer
+                #new_asset.write(str(byte3[-2:])+str(byte3[:2]))
+                #new_asset.write(str(byte2[-2:])+str(byte2[:2]))        
+                #new_asset.write(str(byte1[-2:])+str(byte1[:2])) 
+
+
+
             new_asset.write("\n")
             print("Writting Index Buffer: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
 
@@ -654,17 +670,9 @@ if error_flag == 0:
                 if vertex_decode=="COLOR":
 
 
-
-
-
-                    color_red_hex=hex(int(obj_color_array[vertex_pointer*3]*255)).strip("0x")
-                    color_green_hex=hex(int(obj_color_array[vertex_pointer*3+1]*255)).strip("0x")
-                    color_blue_hex=hex(int(obj_color_array[vertex_pointer*3+2]*255)).strip("0x")
-    
-
-
-
-  
+                    color_red_hex=hex(int(obj_color_array[vertex_pointer*3]*255/2)).split("x")[1]
+                    color_green_hex=hex(int(obj_color_array[vertex_pointer*3+1]*255/2)).split("x")[1]
+                    color_blue_hex=hex(int(obj_color_array[vertex_pointer*3+2]*255/2)).split("x")[1]
 
 
 
@@ -686,7 +694,7 @@ if error_flag == 0:
 
 
 
-                    #print(color_red_hex + color_green_hex+ color_blue_hex + "FF")
+
 
                     #default blue
                     #new_asset.write("63AAC2FF")
