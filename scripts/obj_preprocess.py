@@ -9,7 +9,7 @@ import progressbar
 import struct
 import numpy as np
 from string import *
-
+from shutil import copyfile
 
 
 def float_to_hex(f):
@@ -73,6 +73,7 @@ count=0
 ##################################################################################################
 #Preprocess
 #Get Size of Buffers
+
 
 
 
@@ -193,6 +194,16 @@ object_file.seek(0)
 
 ##################################################################################################
 
+
+
+
+
+
+
+
+
+#Copy new Material File
+copyfile(sys.argv[1].split(".")[0] + ".mtl", sys.argv[1].split(".")[0] +"_processed.mtl")
 
 
 #Parse Control
