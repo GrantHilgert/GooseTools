@@ -234,18 +234,26 @@ def find_material_face_buffer_size(material):
 
 def get_material_skip_list(material):
     global face_material_buffer
-    count_start=find_material_face_min(material)
+    count_start=find_material_face_min(material)-1
     count_stop=find_material_face_max(material)
     next_count=count_start
+    found=0
     skip_list=''
     for material_in_buffer in face_material_buffer.split("@"):  
         if len(material_in_buffer.split()) > 0 and material == material_in_buffer.split()[0].strip():
-            for count in range(count_start, count_stop):
-                if count == next_count:
-                    next_count+=1
-                elif count != nect_count:
-                    skip_list+=str(count) + " "
-                    next_count+=1
+            for face_index in range(len(material_in_buffer.split())):
+            	if face_index == 0:
+            		print("DEBUG - MATERIAL SKIP LIST: " + str(material_in_buffer.split()[0].strip()))
+            		#print("MIB: " + str(int(material_in_buffer.split()[face_index])) + " COUNT: " + str(int(next_count)))
+            	if str(" " + str(next_count) + " " ) in material_in_buffer:
+            		#print("FOUND " + str(next_count))
+            		found=1
+
+            	if found == 0 and next_count <= count_stop:
+                	skip_list+=str(next_count) + " "
+            	next_count+=1
+            	found=0		
+
 
     return skip_list
 
@@ -902,6 +910,16 @@ for material_buffer_index in range(len(face_material_buffer.split("@"))-1):
     print("Global Index: " +str(global_compressed_face_buffer_index))
     print("Local Offset: " +str(local_compressed_face_offset))
 
+    print("Calculating Compression Precursor:" +Fore.YELLOW + "[" +str(current_material) + "]" + Style.RESET_ALL)
+    local_skip_list=get_material_skip_list(current_material)
+    print("Compression Precursor for " + str(current_material) + ": " +Fore.GREEN + "[DONE]" + Style.RESET_ALL)
+    print("SKIP LIST: " + local_skip_list)
+    #for skip_item in local_skip_list.split():
+    	#print("SKIP: " + str(skip_item))
+
+
+
+
 
     for face_index in range(int(len(obj_face_array)/3)):
         #If the face matches the current color
@@ -921,13 +939,14 @@ for material_buffer_index in range(len(face_material_buffer.split("@"))-1):
 
                     #Vertex X
                     compressed_vertex_index=obj_face_array[(face_index*3)] - local_compressed_face_offset + global_compressed_face_buffer_index 
-                    compressed_face_buffer_index=face_index
+                    compressed_face_buffer_index=face_index*3 - local_compressed_face_offset + global_compressed_face_buffer_index
                     #print("DEBUG - Stage 1 (RED): " + str(face_index) + " Compressed Vertex Index: " + str(compressed_vertex_index))   
                     if compressed_obj_vertex_array[compressed_vertex_index] == 0 or compressed_obj_vertex_array[compressed_vertex_index] == obj_vertex_array[obj_face_array[face_index*3]]:
                         compressed_obj_vertex_array[compressed_vertex_index] = obj_vertex_array[obj_face_array[face_index*3]]
-
-                        compressed_obj_face_array[compressed_face_buffer_index*3] = obj_face_array[face_index*3]
-                        compressed_obj_face_color_array[compressed_face_buffer_index*3] = obj_face_color_array[face_index*3]
+                        
+                        #print("DEBUG - COMPRESSED FACE (1): " + str(obj_face_array[face_index*3]) + " ==> " + str(int(obj_face_array[face_index*3]) - local_compressed_face_offset + global_compressed_face_buffer_index))
+                        compressed_obj_face_array[face_index*3] = int(obj_face_array[face_index*3]) - local_compressed_face_offset + global_compressed_face_buffer_index
+                        compressed_obj_face_color_array[face_index*3] = obj_face_color_array[face_index*3]
 
                     else: 
                         print("ERROR - Compressed Buffer Not Empty (RED): "+Fore.RED + "[FAIL]" +Style.RESET_ALL)
@@ -938,11 +957,14 @@ for material_buffer_index in range(len(face_material_buffer.split("@"))-1):
 
                     #Vertex Y
                     compressed_vertex_index=obj_face_array[(face_index)*3+1] - local_compressed_face_offset + global_compressed_face_buffer_index
+                    compressed_face_buffer_index=face_index*3+1 - local_compressed_face_offset + global_compressed_face_buffer_index
                     #print("DEBUG - Stage 1 (GREEN): " + str(face_index) + " Compressed Vertex Index: " + str(compressed_vertex_index)) 
                     if compressed_obj_vertex_array[compressed_vertex_index] ==0 or float(compressed_obj_vertex_array[compressed_vertex_index])== float(obj_vertex_array[obj_face_array[face_index*3+1]]):
                         compressed_obj_vertex_array[compressed_vertex_index] = obj_vertex_array[obj_face_array[face_index*3+1]]
-                        compressed_obj_face_array[compressed_face_buffer_index*3+1] = obj_face_array[face_index*3+1]
-                        compressed_obj_face_color_array[compressed_face_buffer_index*3+1] = obj_face_color_array[face_index*3+1]
+                        
+                        #print("DEBUG - COMPRESSED FACE (2): " + str(obj_face_array[face_index*3+1]) + " ==> " + str(int(obj_face_array[face_index*3+1]) - local_compressed_face_offset + global_compressed_face_buffer_index))
+                        compressed_obj_face_array[face_index*3+1] = int(obj_face_array[face_index*3+1]) - local_compressed_face_offset + global_compressed_face_buffer_index
+                        compressed_obj_face_color_array[face_index*3+1] = obj_face_color_array[face_index*3+1]
 
                     else: 
                         print("ERROR - Compressed Buffer Not Empty (GREEN): "+Fore.RED + "[FAIL]" +Style.RESET_ALL)
@@ -954,14 +976,18 @@ for material_buffer_index in range(len(face_material_buffer.split("@"))-1):
 
                     #Vertex Z
                     compressed_vertex_index=obj_face_array[(face_index*3+2)] - local_compressed_face_offset + global_compressed_face_buffer_index
+                    compressed_face_buffer_index=face_index*3+2 - local_compressed_face_offset + global_compressed_face_buffer_index
                     #print("DEBUG - Stage 1 (BLUE): " + str(face_index) + " Compressed Vertex Index: " + str(compressed_vertex_index)) 
                     if compressed_obj_vertex_array[compressed_vertex_index] ==0 or compressed_obj_vertex_array[compressed_vertex_index] == obj_vertex_array[obj_face_array[face_index*3+2]]:
                         
-                        print("DEBUG -  Compressed Vertex Index: " + str(compressed_vertex_index) +" Z VALUE: " + str(obj_vertex_array[obj_face_array[face_index*3+2]]))
+                        #print("DEBUG -  Compressed Vertex Index: " + str(compressed_vertex_index) +" Z VALUE: " + str(obj_vertex_array[obj_face_array[face_index*3+2]]))
                         compressed_obj_vertex_array[compressed_vertex_index] = obj_vertex_array[obj_face_array[face_index*3+2]]
-                        compressed_obj_face_array[compressed_face_buffer_index*3+2] = obj_face_array[face_index*3+2]
-                        compressed_obj_face_color_array[compressed_face_buffer_index*3+2] = obj_face_color_array[face_index*3+2]
-                        print("DEBUG - Compressed Array: "+str(compressed_obj_vertex_array[compressed_vertex_index]))
+                        
+
+                        #print("DEBUG - COMPRESSED FACE (3): " + str(obj_face_array[face_index*3+2]) + " ==> " + str(int(obj_face_array[face_index*3+2]) - local_compressed_face_offset + global_compressed_face_buffer_index))
+                        compressed_obj_face_array[face_index*3+2] = int(obj_face_array[face_index*3+2]) - local_compressed_face_offset + global_compressed_face_buffer_index
+                        compressed_obj_face_color_array[face_index*3+2] = obj_face_color_array[face_index*3+2]
+
 
                     else: 
                         print("ERROR - Compressed Buffer Not Empty (RED): "+Fore.RED + "[FAIL]" +Style.RESET_ALL)
@@ -994,7 +1020,7 @@ for material_buffer_index in range(len(face_material_buffer.split("@"))-1):
 
 
 for face_index in range(int(len(compressed_obj_face_array)/3)):
-	print("FACE: " + str(compressed_obj_face_array[face_index*3]) +"// "+str(compressed_obj_face_array[face_index*3+1]) +"// "+str(compressed_obj_face_array[face_index*3+2]) )
+	print("FACE "+ str(face_index) + ": " + str(compressed_obj_face_array[face_index*3]) +"// "+str(compressed_obj_face_array[face_index*3+1]) +"// "+str(compressed_obj_face_array[face_index*3+2]) )
 
 
 print(str(compressed_obj_vertex_array))
