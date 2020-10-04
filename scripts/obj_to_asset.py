@@ -56,7 +56,7 @@ def get_color(vertex_num,new_color):
 def get_asset_type(num_of_vertex, size_of_vertex_buffer):
     
     #Simple Itme without bones/UV
-    if isinstance(size_of_vertex_buffer/num_of_vertex, int):
+    if (size_of_vertex_buffer/num_of_vertex).is_integer():
         print("Model Structure: "+ Fore.YELLOW + "[SIMPLE]" +Style.RESET_ALL)
         return "simple"
     
@@ -260,8 +260,8 @@ def get_material_local_skip_list(material):
     for material_in_buffer in face_material_buffer.split("@"):  
         if len(material_in_buffer.split()) > 0 and material == material_in_buffer.split()[0].strip():
             for face_index in range(count_start,count_stop):
-                if face_index == 0:
-                    print("DEBUG - MATERIAL SKIP LIST: " + str(material_in_buffer.split()[0].strip()))
+                #if face_index == 0:
+                    #print("DEBUG - MATERIAL SKIP LIST: " + str(material_in_buffer.split()[0].strip()))
                     #print("MIB: " + str(int(material_in_buffer.split()[face_index])) + " COUNT: " + str(int(next_count)))
                 if str(" " + str(face_index) + " " ) in material_in_buffer:
                     #print("FOUND " + str(next_count))
@@ -284,7 +284,7 @@ def get_material_global_buffer_range(material):
     local_max=max(obj_face_array)-1
     local_min=min(obj_face_array)-1
     skip_list_size=len(get_material_local_skip_list(material).split())
-    print("MAX: " + str(local_max)+ " MIN: " + str(local_min) + " SKIP SIZE: " + str(skip_list_size))
+    #print("MAX: " + str(local_max)+ " MIN: " + str(local_min) + " SKIP SIZE: " + str(skip_list_size))
     return local_max-local_min-skip_list_size+1
 
 def get_material_local_buffer_range(material):
@@ -292,7 +292,7 @@ def get_material_local_buffer_range(material):
     local_min=find_material_face_min(material)
 
     skip_list_size=len(get_material_local_skip_list(material).split())
-    print("MAX: " + str(local_max)+ " MIN: " + str(local_min) + " SKIP SIZE: " + str(skip_list_size))
+    #print("MAX: " + str(local_max)+ " MIN: " + str(local_min) + " SKIP SIZE: " + str(skip_list_size))
     return local_max-local_min-skip_list_size
 
 
@@ -983,9 +983,9 @@ def compress_face(input_face,input_material):
                             compressed_obj_normal_array[compressed_vertex_index*3+2] = obj_normal_array[(obj_face_array[input_face]-1)*3+2]
 
                             #Vertex Colors
-                            compressed_obj_vertex_color_array[compressed_vertex_index*3] = obj_face_color_array[input_face*3]
-                            compressed_obj_vertex_color_array[compressed_vertex_index*3+1] = obj_face_color_array[input_face*3+1]
-                            compressed_obj_vertex_color_array[compressed_vertex_index*3+2] = obj_face_color_array[input_face*3+2]
+                            compressed_obj_vertex_color_array[compressed_vertex_index*3] = float(get_material_value_from_name(input_material, 'r'))
+                            compressed_obj_vertex_color_array[compressed_vertex_index*3+1] = float(get_material_value_from_name(input_material, 'g'))
+                            compressed_obj_vertex_color_array[compressed_vertex_index*3+2] = float(get_material_value_from_name(input_material, 'b'))
                         
 
                             # FACE
@@ -1231,9 +1231,9 @@ for object_num in range(obj_count_preprocess):
     print("Object Number: " + str(object_num+1))
     print("Object Name: "+Fore.GREEN + str(obj_g1)+Style.RESET_ALL)
     print("Material: "+Fore.GREEN + str(obj_g2)+Style.RESET_ALL)
-    print("Total Vertexs(v): "+Fore.GREEN +str(obj_vertex_count_preprocess)+Style.RESET_ALL)
-    print("Total Normal(vn): "+Fore.GREEN +str(obj_normal_count_preprocess)+Style.RESET_ALL)
-    print("Total Faces(f): "+Fore.GREEN +str(obj_face_count_preprocess)+Style.RESET_ALL)
+    print("Total Vertexs(v): "+Fore.GREEN +str(compressed_buffer_sized_postprocess)+Style.RESET_ALL)
+    print("Total Normal(vn): "+Fore.GREEN +str(compressed_buffer_sized_postprocess)+Style.RESET_ALL)
+    print("Total Faces(f): "+Fore.GREEN +str(len(compressed_obj_face_array)/3)+Style.RESET_ALL)
 
 print("#######################################################")
 #print("Vertex Data")
@@ -1273,10 +1273,10 @@ if asset_type == "simple":
             new_asset.write("  m_Name: "+ asset_name+ "\n")
             print("Writting Asset Name: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
         elif "m_VertexCount:" in line:
-            new_asset.write("    m_VertexCount: "+ str(int(obj_vertex_count_preprocess))+ "\n")
+            new_asset.write("    m_VertexCount: "+ str(compressed_buffer_sized_postprocess)+ "\n")
             print("Writting Vertex Count Main: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
         elif "    vertexCount: " in line:
-            new_asset.write("    vertexCount: "+ str(int(obj_vertex_count_preprocess))+ "\n")
+            new_asset.write("    vertexCount: "+ str(compressed_buffer_sized_postprocess)+ "\n")
             print("Writting Vertex Count Sub: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
 
         elif "indexCount" in line:
@@ -1286,30 +1286,38 @@ if asset_type == "simple":
 
             new_asset.write("  m_IndexBuffer: ")
             for byte in range(obj_face_count_preprocess):
-                byte1 =format(obj_face_array[byte*3]-1,"04x")
+                
+                #print("DEBUG: BYTE: " + str(byte*3) + " FACE INDEX: " + str(compressed_obj_face_array[byte*3]-1))
+                #print("DEBUG: BYTE: " + str(byte*3+1) + " FACE INDEX: " + str(compressed_obj_face_array[byte*3+1]-1))
+                #print("DEBUG: BYTE: " + str(byte*3+2) + " FACE INDEX: " + str(compressed_obj_face_array[byte*3+2]-1))
+
+
+
+
+
+
+
+                byte1 =format(compressed_obj_face_array[byte*3]-1,"04x")
                 #print("Byte1: " + str(byte1))
                 #print("First: " +str(byte1[:2]))
                 #print("Second: " +str(byte1[-2:]))
 
-                byte2 =format(obj_face_array[byte*3+1]-1,"04x")
+                byte2 =format(compressed_obj_face_array[byte*3+1]-1,"04x")
                 #print("Byte2: " + str(byte2))
                 #print("First: " +str(byte2[:2]))
                 #print("Second: " +str(byte2[-2:]))
 
-                byte3 =format(obj_face_array[byte*3+2]-1,"04x")
+                byte3 =format(compressed_obj_face_array[byte*3+2]-1,"04x")
                 #print("Byte3: " + str(byte3))
                 #print("First: " +str(byte3[:2]))
                 #print("second: " +str(byte3[-2:]))
 
                 #write first byte first
-
-
-
-
-
-                new_asset.write(str(byte3[-2:])+str(byte3[:2]))
+                new_asset.write(str(byte1[-2:])+str(byte1[:2]))
                 new_asset.write(str(byte2[-2:])+str(byte2[:2]))
-                new_asset.write(str(byte1[-2:])+str(byte1[:2])) 
+                new_asset.write(str(byte3[-2:])+str(byte3[:2]))
+
+ 
 
 
 
@@ -1324,7 +1332,7 @@ if asset_type == "simple":
             print("Writting Index Buffer: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
 
         elif "m_DataSize:" in line:
-            new_asset.write("    m_DataSize: "+ str(obj_vertex_count_preprocess*44)+"\n")
+            new_asset.write("    m_DataSize: "+ str(int(compressed_buffer_sized_postprocess)*44)+"\n")
             print("    m_DataSize: "+ str(obj_vertex_count_preprocess*44)+"\n")
             print("Writting Vertex Buffer Data Size: "+Fore.GREEN + "[OK]" +Style.RESET_ALL)
         elif "_typelessdata:" in line:
@@ -1391,7 +1399,9 @@ if asset_type == "simple":
                     color_red_hex=hex(int(compressed_obj_vertex_color_array[vertex_pointer*3]*255)).split("x")[1]
                     color_green_hex=hex(int(compressed_obj_vertex_color_array[vertex_pointer*3+1]*255)).split("x")[1]
                     color_blue_hex=hex(int(compressed_obj_vertex_color_array[vertex_pointer*3+2]*255)).split("x")[1]
-
+                    #print("COLOR RED: MTL: " + str(compressed_obj_vertex_color_array[vertex_pointer*3]) +" DEC: " + str(int(compressed_obj_vertex_color_array[vertex_pointer*3]*255)) + " CONVERT: " + str(color_red_hex))
+                    #print("COLOR GREEN: MTL: " + str(compressed_obj_vertex_color_array[vertex_pointer*3+1]) +" DEC: " + str(int(compressed_obj_vertex_color_array[vertex_pointer*3+1]*255)) + " CONVERT: " + str(color_green_hex))
+                    #print("COLOR BLUE: MTL: " + str(compressed_obj_vertex_color_array[vertex_pointer*3+2]) +" DEC: " + str(int(compressed_obj_vertex_color_array[vertex_pointer*3+2]*255)) + " CONVERT: " + str(color_blue_hex))               
 
 
                     if len(color_red_hex) == 1:
@@ -1416,7 +1426,7 @@ if asset_type == "simple":
 
                     #default blue
                     #new_asset.write("63AAC2FF")
-
+                    #print("COLOR: " +str(color_red_hex) + str(color_green_hex)+ str(color_blue_hex) + "ff")
                     new_asset.write(str(color_red_hex) + str(color_green_hex)+ str(color_blue_hex) + "ff")
 
 
@@ -1466,7 +1476,7 @@ if asset_type == "simple":
 #WRITE COMPLEX ASSET FILE
 ########################################################################################################################################
 
-if asset_type == "complex":
+elif asset_type == "complex":
 
     new_asset_file_name=str(sys.argv[2]).split(".")[0] + "_GooseTools_Compiled"+str(obj_g1)+".asset"
     print(new_asset_file_name)
@@ -1493,6 +1503,10 @@ if asset_type == "complex":
 
             new_asset.write("  m_IndexBuffer: ")
             for byte in range(obj_face_count_preprocess):
+                
+                #print("DEBUG: BYTE: " + str(byte*3) + " FACE INDEX: " + str(obj_face_array[byte*3]-1))
+                #print("DEBUG: BYTE: " + str(byte*3+1) + " FACE INDEX: " + str(obj_face_array[byte*3+1]-1))
+               # print("DEBUG: BYTE: " + str(byte*3+2) + " FACE INDEX: " + str(obj_face_array[byte*3+2]-1))
                 byte1 =format(obj_face_array[byte*3]-1,"04x")
                 #print("Byte1: " + str(byte1))
                 #print("First: " +str(byte1[:2]))
