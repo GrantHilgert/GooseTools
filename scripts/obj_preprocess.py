@@ -232,11 +232,11 @@ obj_vertex_array= np.zeros((obj_vertex_count_preprocess)*3, dtype=float)
 obj_vertex_count=0
 
 #Normals
-obj_normal_array= np.zeros((obj_vertex_count_preprocess+3)*3, dtype=float)
+obj_normal_array= np.zeros((obj_normal_count_preprocess+3)*3, dtype=float)
 obj_normal_count=0
 
 #Regenerated
-new_obj_normal_array= np.zeros((obj_vertex_count_preprocess+3)*3, dtype=float)
+new_obj_normal_array= np.zeros((obj_normal_count_preprocess+3)*3, dtype=float)
 new_obj_normal_count=0
 
 
@@ -289,7 +289,7 @@ for line in OBJECT_LINE:
 
 
         #Collect Normals
-        elif "vn" in line.split()[0]: 
+        elif "vn" in line.split()[0] and len(line.split()) > 4: 
             #print(str(obj_normal_count)+ line)
             obj_normal_array[obj_normal_count*3]=float(str(line.split()[1]))
             obj_normal_array[obj_normal_count*3+1]=float(str(line.split()[2]))
@@ -532,9 +532,14 @@ for index in range(int(len(obj_vertex_array)/3)):
 
 ########################
 #Write Normals
+
+print(new_obj_normal_array)
+
+
 normal_write_count=0
-for index in range(int(len(obj_vertex_array)/3)):
+for index in range(int(len(obj_normal_array)/3)):
     #print("Writing Normal: "+str(index)+"vn " + str(new_obj_normal_array[index*3]) + " "+ str(new_obj_normal_array[index*3+1]) +" "+ str(new_obj_normal_array[index*3+2]))
+
     new_obj_file.write("vn " + str(new_obj_normal_array[(index)*3]) + " "+ str(new_obj_normal_array[(index)*3+1]) +" "+ str(new_obj_normal_array[(index)*3+2]) + "\n")
     normal_write_count+=1
 
