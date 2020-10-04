@@ -1,6 +1,6 @@
 #GooseTools Asset to .Obj Converter
-major=0
-minor=5
+major=1
+minor=0
 
 import sys
 from colorama import Fore, Back, Style, init
@@ -17,10 +17,67 @@ print("Written by Grant Hilgert")
 print("September 2020")
 
 
+
+
+
+
+
+
+########################################################################################################################################
+#FUNCTION DEFINITIONS
+########################################################################################################################################
+
+
+
+
+#Creates a blender friendly material name
 def get_material_name(raw_material_data):
 
     return "ugg_material.00"+ str(material_count_index)
 
+#Returns whether the asset is simple(i.g. Pumpkin) or has bone(i.g. Goose)
+def get_asset_type(num_of_vertex, size_of_vertex_buffer):
+    
+    #Simple Itme without bones/UV
+    if (size_of_vertex_buffer/num_of_vertex).is_integer():
+        print("Model Structure: "+ Fore.YELLOW + "[SIMPLE]" +Style.RESET_ALL)
+        return "simple"
+    
+    #Goosemesh or NPC
+    else:
+
+        #Hard code for now
+        #The goose is such
+        #40 Bytes * Vertex Count: Vertex + Normals + Unknown Channel
+        #12 * Vertex Count: UV + COLOR
+        #12 * 1: Some type of name
+        #32 * Verted Count: I think bones? No decoded yet
+
+        complex_vertex_buffer_size=40*num_of_vertex
+        complex_color_buffer_size=12*num_of_vertex
+        complex_bone_buffer_size=32*num_of_vertex
+        complex_bone_lable_size=12
+
+        complex_buffer_combined_size=complex_vertex_buffer_size+complex_color_buffer_size+complex_bone_buffer_size+complex_bone_lable_size
+        if size_of_vertex_buffer == complex_buffer_combined_size:
+            print("Model Structure: "+ Fore.YELLOW + "[COMPLEX]" +Style.RESET_ALL)        
+            return "complex"
+        
+
+        #This buffer is something else and we cant decode it, throw an error.
+        else:
+            print("Model Structure: "+ Fore.RED + "[UNKNOWN]" +Style.RESET_ALL) 
+            return "fail"
+
+
+
+
+
+
+
+########################################################################################################################################
+#PREPROCESS ASSET
+########################################################################################################################################
 
 
 material_count_index=0
@@ -114,16 +171,68 @@ for line in YAML_LINE:
 
         vertex_buffer=str(line.split(":", maxsplit=1)[1].strip())
 
-print("Extracted Header")
+
+
+
+
+
+
+########################################################################################################################################
+#PROCESS ASSET
+########################################################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+########################################################################################################################################
+#PRINT INFO
+########################################################################################################################################
+
+
+
 print("Asset Name: "+Fore.GREEN + str(asset_name)+Style.RESET_ALL)
 print("Indexs: "+Fore.GREEN +str(index_count)+Style.RESET_ALL)
 print("Vertexs: "+Fore.GREEN +str(vertex_count)+Style.RESET_ALL)
 print("Vertex Buffer Size: "+ Fore.GREEN +str(vertex_buffer_size)+Style.RESET_ALL)
-vertex_buffer_block_size=(vertex_buffer_size/vertex_count)
-print("Vertex Buffer Block Size: " +Fore.GREEN+ str(vertex_buffer_block_size)+Style.RESET_ALL)
+
+asset_type=get_asset_type(vertex_count,vertex_buffer_size)
+if asset_type == "simple":
+    vertex_buffer_block_size=(vertex_buffer_size/vertex_count)
+    print("Vertex Buffer Block Size: " +Fore.GREEN+ str(vertex_buffer_block_size)+Style.RESET_ALL)
+elif asset_type == "complex":
+    complex_vertex_buffer_size=40*vertex_count
+    complex_color_buffer_size=12*vertex_count
+    complex_bone_buffer_size=32*vertex_count
+    vertex_buffer_block_size=40
+    print("Complex Vertex Buffer Block Size: " +Fore.GREEN+ str(complex_vertex_buffer_size)+Style.RESET_ALL)
+    print("Complex Color and UV Buffer Block Size: " +Fore.GREEN+ str(complex_color_buffer_size)+Style.RESET_ALL)
+    print("Complex Bone Buffer Block Size: " +Fore.GREEN+ str(complex_bone_buffer_size)+Style.RESET_ALL)
+
 #print("Raw Buffers")
 #print("INDEX BUFFER: " + Fore.RED + str(index_buffer)+Style.RESET_ALL)
 #print("VERTEX BUFFER: "+ Fore.RED + str(vertex_buffer)+Style.RESET_ALL)
+
+
+
+
+
+
+########################################################################################################################################
+#CREATE OBJECT AND MATERIAL FILE
+########################################################################################################################################
 
 
 #Create New Object and Material File
@@ -137,14 +246,15 @@ binary_file.write("\n# https://github.com/GrantHilgert/GooseTools\n")
 
 
 #Write Material defintion to Object file
-
-
 mtllib_file_name=sys.argv[1].split("\\")[len(sys.argv[1].split("\\"))-1].split(".")[0]
 binary_file.write("mtllib " + str(mtllib_file_name) + ".mtl\n")
 
 
 #bar = progressbar.ProgressBar(max_value=vertex_buffer_size*2+len(index_buffer)+vertex_count*24)
 #progress_bar_count=0
+
+
+
 byte_count=0
 
 
@@ -175,25 +285,90 @@ material_buffer=""
 material_list=""
 material_count=0
 
-####################################################################
-#New .OBJ and .MTL Creation Routine
+data_pos_index="POS X"
+
+#number of bytes to skip until next write
+skip_count=0
+#Dont write on the same loop
+write_flag=0
 
 
 
-# 11 Double file structure
+
+
+
+########################################################################################################################################
+#New .OBJ and .MTL Creation Routine 
+########################################################################################################################################
+
+
+
+#####################
+# SIMPLE STRUCTURE
+#####################
+# 1 Block Total
+# Block 1:
 # long 1: X
 # long 2: Y
-# DOuble 3: Z
-# Double 4: Normal X
-# Double 5: Normal Y
-# DOuble 6: Normal Z
-# Double 7: Unknown
-# Double 8: Unknown
-# Double 9: Unknown
-# Doublw 10: Unknown
-# Double 12: 3 Byte COlOR + "FF" TERMINATOR?
+# long 3: Z
+# long 4: Normal X
+# long 5: Normal Y
+# long 6: Normal Z
+# long 7: Unknown - Why Always 1?
+# long 8: Unknown
+# long 9: Unknown
+# long 10: Unknown - Why Always -1?
+# long 12: RED + GREEN + BLUE + "FF"
+
+#####################
+# COMPLEX STRUCTURE
+#####################
+# 3 Blocks Total
+#Block 1
+# long 1: X
+# long 2: Y
+# long 3: Z
+# long 4: Normal X
+# long 5: Normal Y
+# long 6: Normal Z
+# long 7: Unknown - Why Always 1?
+# long 8: Unknown
+# long 9: Unknown
+# long 10: Unknown - Why Always -1?
+
+#Block 2
+# long 1: X
+# long 2: Y
+# long 3: Z
+# long 4: Normal X
+# long 5: Normal Y
+# long 6: Normal Z
+# long 7: Unknown - Why Always 1?
+# long 8: Unknown
+# long 9: Unknown
+# long 10: Unknown - Why Always -1?
+
+#Block 3
+# long 1: Unknown
+# long 2: Unknown
+# long 3: Unknown
+# long 4: Unknown
+# long 5: Unknown
+# long 6: Unknown
+# long 7: Unknown
+# long 8: Unknown
 
 
+
+
+
+
+
+
+
+
+
+# SIMPLE OBJECT STATE MACHINE
 #POS: Positon
 #NORM: Normal
 #SKIP: Unknown
@@ -201,6 +376,135 @@ material_count=0
 #USEMTL: MATERIAL
 
 
+
+########################################################################################################################################
+#Process Colors
+########################################################################################################################################
+print("DEBUG - SIMPLE COLOR for loop size:" + str(int(vertex_count*vertex_buffer_block_size/4)))
+material_buffer_write_count=0
+if asset_type == "simple":
+    data_pos_index="POS X"
+    for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
+
+        temp_string=""
+        #for each byte
+        for temp_index in range(8):
+            #collect one double from the string
+            temp_string+=vertex_buffer[long_index*8+temp_index]
+     
+            #SKIP the Vertex Data this round
+        if data_pos_index.split()[0].strip() =="POS":    
+            if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
+                data_pos_index="POS Y"
+
+                write_flag=1
+            if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:     
+                data_pos_index="POS Z"
+                write_flag=1
+            if data_pos_index.split()[1].strip() =="Z" and write_flag == 0:                     
+                data_pos_index="NORM X"
+                write_flag=1
+
+
+                #write the normals instead
+        if data_pos_index.split()[0].strip() =="NORM":    
+            if data_pos_index.split()[1].strip() =="X" and write_flag == 0:                  
+                data_pos_index="NORM Y"
+                write_flag=1
+            if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:   
+                data_pos_index="NORM Z"
+                write_flag=1
+            if data_pos_index.split()[1].strip() =="Z" and write_flag == 0: 
+                data_pos_index="SKIP"
+                write_flag=1
+        
+
+        if data_pos_index.split()[0].strip() == "SKIP" and write_flag == 0:
+            #print("SKIP COUNT BEFORE: " + str(skip_count))
+            skip_count+=1
+            #print("SKIP COUNT AFTER: " + str(skip_count))
+            #print("DEBUG - SKIPPING: " + str(skip_count) + " DATA : " + str(temp_string))        
+        if data_pos_index.split()[0] =="SKIP" and skip_count==5 and write_flag == 0:
+            #print("COLOR!!!!!")
+            data_pos_index="COLOR"
+            skip_count=0
+            write_flag=1
+
+            #Add Material to buffer
+            current_material=str(temp_string)        
+            material_buffer+=current_material + " "
+            material_buffer_write_count+=1
+            if current_material != old_material:
+                old_material=current_material
+                material_list+=current_material + " "
+                print("Found Simple Material"+ Fore.GREEN + "[RAW: " + current_material + " ]" +Style.RESET_ALL)
+            data_pos_index="POS X"
+        #print(str(data_pos_index) + " : " + str(temp_string))
+        write_flag=0
+
+
+# Th
+elif asset_type == "complex":
+    data_pos_index="UV X"
+    for long_index in range(int(complex_color_buffer_size/4)):
+        #print("POS: " + data_pos_index + " : " + str(long_index))
+        temp_string=""
+        #Create a LONG string from 8 characters
+        for temp_index in range(8):
+            #collect one double from the string
+            temp_string+=vertex_buffer[(int(complex_vertex_buffer_size/4)+long_index)*8+temp_index]
+
+            #SKIP the Vertex Data this round
+        if data_pos_index.split()[0].strip() =="UV":    
+            if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
+                data_pos_index="UV Y"
+                write_flag=1
+            if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:     
+                data_pos_index="COLOR"
+                write_flag=1
+        if data_pos_index.split()[0].strip() =="COLOR" and write_flag == 0:     
+
+            skip_count=0
+            write_flag=1
+
+            #Add Material to buffer
+            current_material=str(temp_string)        
+            material_buffer+=current_material + " "
+
+            if current_material != old_material:
+                old_material=current_material
+                material_list+=current_material + " "
+                print("Found Complex Material"+ Fore.GREEN + "[RAW: " + current_material + " ]" +Style.RESET_ALL)
+            data_pos_index="UV X"
+
+        write_flag=0
+
+
+
+
+
+
+#Write Default color if we dont know the structure
+else:
+    print("FAIL: WRITE DEFAULT COLOR PLACEHOLDER")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+########################################################################################################################################
+#WRITE VERTEX
+########################################################################################################################################
 
 
 data_pos_index="POS X"
@@ -212,6 +516,7 @@ write_flag=0
 #Write Vertex Data and collect material data at the same time to save time
 print("VERTEX RANGE: " + str(int(vertex_count*vertex_buffer_block_size/4)))
 for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
+    #print("POS: " + data_pos_index)
     #print(str(long_index))
     temp_string=""
     #for each byte
@@ -234,41 +539,64 @@ for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
         if data_pos_index.split()[1].strip() =="Z" and write_flag == 0:          
             binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)))
             binary_file.write("\n")             
+            data_pos_index="NORM X"
+            write_flag=1
+
+            #write the normals instead
+    if data_pos_index.split()[0].strip() =="NORM":    
+        if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
+            data_pos_index="NORM Y"
+            write_flag=1
+        if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:
+            data_pos_index="NORM Z"
+            write_flag=1
+        if data_pos_index.split()[1].strip() =="Z" and write_flag == 0:     
             data_pos_index="SKIP"
             write_flag=1
 
-    if data_pos_index.split()[0].strip() == "SKIP":
+    if data_pos_index.split()[0].strip() == "SKIP" and write_flag == 0:
         skip_count+=1
-    if data_pos_index.split()[0] =="SKIP" and skip_count==9 and write_flag == 0:
-        data_pos_index="COLOR"
-        skip_count=0
-        write_flag=1
+    
 
-        #Add Material to buffer
-        current_material=str(temp_string)        
-        material_buffer+=current_material + " "
+    if asset_type == "simple":
+        if data_pos_index.split()[0] =="SKIP" and skip_count==5 and write_flag == 0:
+            data_pos_index="COLOR"
+            skip_count=0
+            write_flag=1
+            data_pos_index="POS X"
+    
+    elif asset_type == "complex":
+        if data_pos_index.split()[0] =="SKIP" and skip_count==4 and write_flag == 0:
+            data_pos_index="COLOR"
+            skip_count=0
+            write_flag=1
+            data_pos_index="POS X"
 
-        if current_material != old_material:
-            old_material=current_material
-            material_list+=current_material + " "
-            print("Found Material"+ Fore.GREEN + "[RAW: " + current_material + " ]" +Style.RESET_ALL)
-        data_pos_index="POS X"
 
     write_flag=0
     #print(data_pos_index + str(skip_count))
+
+
+
+
+
+########################################################################################################################################
+#WRITE NORMALS
+########################################################################################################################################
+
 
 
 #End New Vertex Write and Color Extraction Routine
 ####################################################################
 #Being New Normal Write Routine
 
-
-data_pos_index="NORM X"
+#data_pos_index="NORM X" - I think this was a bug. changed to POS X V1.00
+data_pos_index="POS X"
 #Write Normal Data
 normal_offset=12
 print("NORMAL RANGE: " + str(int(vertex_count*vertex_buffer_block_size/4)))
 for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
-
+    #print("POS: " + data_pos_index)
     temp_string=""
     #for each byte
     for temp_index in range(8):
@@ -306,14 +634,24 @@ for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
             binary_file.write("\n")           
             data_pos_index="SKIP"
             write_flag=1
-    if data_pos_index.split()[0] =="SKIP":
+    if data_pos_index.split()[0] =="SKIP" and write_flag == 0:
         skip_count+=1
-    if data_pos_index.split()[0] =="SKIP" and skip_count==6:
-        data_pos_index="POS X"
-        skip_count=0
+
+    if asset_type == "simple":
+        if data_pos_index.split()[0] =="SKIP" and skip_count==5 and write_flag == 0:
+            data_pos_index="COLOR"
+            skip_count=0
+            write_flag=1
+            data_pos_index="POS X"
+    
+    elif asset_type == "complex":
+        if data_pos_index.split()[0] =="SKIP" and skip_count==4 and write_flag == 0:
+            data_pos_index="COLOR"
+            skip_count=0
+            write_flag=1
+            data_pos_index="POS X"
+
     write_flag=0
-
-
         
 
 #End New Normal Write Routine
@@ -333,14 +671,15 @@ binary_file.write("g " + str(asset_name) + "_0\n")
 current_face_color=""
 old_face_color=""
 
-
+old_material=""
+current_material=""
 
 
 #ver 0.3: Index Buffer is aranged LSB:MSB
 #ver 0.1: Face objects strings are reveresed how they appear in the data stream 
 #Index Buffer 
 index_buffer_count=0
-byte_cou=nt=0
+byte_count=0
 pos_a_r=''
 pos_b_r=''
 pos_c_r=''
@@ -412,6 +751,7 @@ for byte in index_buffer:
             pos_c=int((pos_c_msb+pos_c_lsb),16)+1
 
             #print(str(pos_a)+" "+str(pos_b))
+            print("Material Buffer Write Count: " + str(material_buffer_write_count) + " POS A: " + str(pos_a-1))
             if material_buffer.split()[pos_a-1] == material_buffer.split()[pos_b-1]:
                 current_material=material_buffer.split()[pos_a-1]
             elif material_buffer.split()[pos_a-1] == material_buffer.split()[pos_c-1]:
@@ -464,7 +804,11 @@ material_file.write("\n# https://github.com/GrantHilgert/GooseTools\n")
 material_file.write("# Material Count: "+ str(len(material_list.split()))+"\n")
 material_file.write("\n")
 
+material_list_duplicate=""
+
 material_count_index=0
+
+print(material_list)
 for material_index in range(len(material_list.split())):
     
 
