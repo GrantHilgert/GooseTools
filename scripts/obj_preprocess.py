@@ -1,6 +1,6 @@
 #Object PreProcessor
-major=0
-minor=3
+major=1
+minor=1
 
 import sys
 from colorama import Fore, Back, Style, init
@@ -236,7 +236,11 @@ obj_normal_array= np.zeros((obj_normal_count_preprocess+3)*3, dtype=float)
 obj_normal_count=0
 
 #Regenerated
-new_obj_normal_array= np.zeros((obj_normal_count_preprocess+3)*3, dtype=float)
+
+if obj_vertex_count_preprocess > obj_normal_count_preprocess:
+    new_obj_normal_array= np.zeros((obj_vertex_count_preprocess+3)*3, dtype=float)
+else:
+    new_obj_normal_array= np.zeros((obj_normal_count_preprocess+3)*3, dtype=float)
 new_obj_normal_count=0
 
 
@@ -308,7 +312,7 @@ for line in OBJECT_LINE:
             current_material=line.split()[1]
             if current_material != old_material:
                 old_material=current_material
-                print("Setting Material: " + Fore.GREEN + "[RAW: " + current_material + " ]" +Style.RESET_ALL)
+                print("Linking Material: " + Fore.GREEN + "[RAW: " + current_material + " ]" +Style.RESET_ALL)
 
         #collect Faces
         elif "f" in line.split()[0]:
@@ -533,7 +537,6 @@ for index in range(int(len(obj_vertex_array)/3)):
 ########################
 #Write Normals
 
-print(new_obj_normal_array)
 
 
 normal_write_count=0
