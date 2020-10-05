@@ -540,7 +540,7 @@ for index in range(int(len(obj_vertex_array)/3)):
 
 
 normal_write_count=0
-for index in range(int(len(obj_normal_array)/3)):
+for index in range(int(len(new_obj_normal_array)/3)):
     #print("Writing Normal: "+str(index)+"vn " + str(new_obj_normal_array[index*3]) + " "+ str(new_obj_normal_array[index*3+1]) +" "+ str(new_obj_normal_array[index*3+2]))
 
     new_obj_file.write("vn " + str(new_obj_normal_array[(index)*3]) + " "+ str(new_obj_normal_array[(index)*3+1]) +" "+ str(new_obj_normal_array[(index)*3+2]) + "\n")
