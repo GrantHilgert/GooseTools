@@ -3,18 +3,23 @@ major=1
 minor=0
 
 import sys
+import os
 from colorama import Fore, Back, Style, init
 import time
 import progressbar
 import struct
+import numpy as np
 from string import *
+import os.path
+from os import path
+
 
 init()
 
-print("Untitled Goose Game Asset to OBJ converter")
+print("GooseTools - Map Asset to OBJ Converter")
 print("Version: " + str(major) + "." + str(minor))
 print("Written by Grant Hilgert")
-print("September 2020")
+print("October 2020")
 
 
 
@@ -26,6 +31,248 @@ print("September 2020")
 ########################################################################################################################################
 #FUNCTION DEFINITIONS
 ########################################################################################################################################
+
+def get_submesh_count():
+    print("get submesh_count PLACEHOLDER")
+
+
+
+global submesh_global_name
+
+#Stores 6 Values per Submesh: firstByte, indexCount, topology, baseVertex, firstVertex, vertexCount
+global submesh_structure_array
+
+global submesh_center_array
+global submesh_extent_array
+
+
+
+global submesh_data_array
+
+
+
+global submesh_vertex_array
+global submesh_normal_array
+global submesh_index_array
+global submesh_mesh_name_array
+
+
+
+
+
+
+
+
+
+
+########################################################################################################################################
+# READ UABE FILE
+########################################################################################################################################
+
+map_file = open(sys.argv[1], "r")
+MAP_LINE = map_file.readlines()
+
+
+
+#Submesh Data Variables
+submesh_index=0
+submesh_flag=0
+center_flag=0
+extent_flag=0
+parsed_submesh_structure_array_size=0
+
+
+#Vertex Data Buffer Variables
+data_index=0
+submesh_data_flag=0
+submesh_data_flag=0
+parsed_submesh_data_array_size=0
+
+
+for line in MAP_LINE:
+
+
+    #Get String name
+    if "m_Name" in line:
+        submesh_global_name=line.split("=")[1].strip()
+        print("Combined Mesh Name: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)    
+
+    #Get buffer and set size
+    if "int size" in line and parsed_submesh_structure_array_size == 0:
+        
+        parsed_submesh_structure_array_size = int(line.split("=")[1].strip())
+        submesh_structure_array = np.zeros(parsed_submesh_structure_array_size*6, dtype=int)
+        submesh_center_array = np.zeros(parsed_submesh_structure_array_size*3, dtype=float)
+        submesh_extent_array = np.zeros(parsed_submesh_structure_array_size*3, dtype=float)
+
+
+    #Track which Submesh we are on.
+    if "0 SubMesh data" in line:
+        if submesh_index == 0 and submesh_flag == 1:
+            submesh_index+=1
+        elif submesh_index > 0 and submesh_flag == 1:
+            submesh_index+=1
+        elif submesh_index == 0 and submesh_flag == 0:
+            submesh_flag = 1
+
+    #for each index
+    if "firstByte" in line:
+      submesh_structure_array[submesh_index*6] = int(line.split("=")[1].strip())
+    if "indexCount" in line:
+        submesh_structure_array[submesh_index*6+1] = int(line.split("=")[1].strip())
+    if "topology" in line:
+      submesh_structure_array[submesh_index*6+2] = int(line.split("=")[1].strip())
+    if "baseVertex" in line:
+        submesh_structure_array[submesh_index*6+3] = int(line.split("=")[1].strip())
+    if "firstVertex" in line:
+      submesh_structure_array[submesh_index*6+4] = int(line.split("=")[1].strip())
+    if "vertexCount" in line:
+        submesh_structure_array[submesh_index*6+5] = int(line.split("=")[1].strip())
+
+    if "m_Center" in line:
+        center_flag=1
+        extent_flag=0
+    if "float x" in line and center_flag == 1:
+        submesh_center_array[submesh_index*3] == float(line.split("=")[1].strip())
+    if "float y" in line and center_flag == 1:
+        submesh_center_array[submesh_index*3+1] == float(line.split("=")[1].strip())
+    if "float z" in line and center_flag == 1:
+        submesh_center_array[submesh_index*3+2] == float(line.split("=")[1].strip())
+
+    if "m_Extent" in line:
+        extent_flag=1
+        center_flag=0
+    if "float x" in line and center_flag == 1:
+        submesh_extent_array[submesh_index*3] == float(line.split("=")[1].strip())
+    if "float y" in line and center_flag == 1:
+        submesh_extent_array[submesh_index*3+1] == float(line.split("=")[1].strip())
+    if "float z" in line and center_flag == 1:
+        submesh_extent_array[submesh_index*3+2] == float(line.split("=")[1].strip())
+
+    if "m_IndexBuffer" in line:
+        submesh_data_flag=1
+
+    #Get buffer and set size
+    if "int size" in line and parsed_submesh_data_array_size == 0 and submesh_data_flag == 1:
+        parsed_submesh_data_array_size = int(line.split("=")[1].strip())
+        submesh_flag = 0
+        submesh_data_array = np.zeros(parsed_submesh_data_array_size, dtype=int)
+
+ 
+    if "UInt8 data" in line and submesh_data_flag == 1:
+        submesh_data_array[data_index] = int(line.split("=")[1].strip())
+        data_index+=1
+
+
+
+
+
+if parsed_submesh_structure_array_size == submesh_index+1:
+    print("Submesh Structure: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)  
+    print("Submesh Count: "+ Fore.GREEN + str(submesh_index+1) +Style.RESET_ALL)  
+else:
+    print("Submesh Structure Mismatch: "+ Fore.RED + "[FAIL]" +Style.RESET_ALL)
+    print("Submesh Count: "+ Fore.RED + str(submesh_index+1) +Style.RESET_ALL + " == "+ Fore.RED + str(parsed_submesh_structure_array_size) +Style.RESET_ALL )    
+
+if parsed_submesh_data_array_size == data_index:
+    print("Submesh Data: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)  
+    print("Submesh Count: "+ Fore.GREEN + str(data_index) +Style.RESET_ALL)  
+else:
+    print("Submesh Data Size Mismatch: "+ Fore.RED + "[FAIL]" +Style.RESET_ALL)
+    print("Submesh Data Size: "+ Fore.RED + str(data_index) +Style.RESET_ALL + " == "+ Fore.RED + str(parsed_submesh_data_array_size) +Style.RESET_ALL )    
+
+
+
+
+
+
+
+
+
+
+
+########################################################################################################################################
+#CREATE OBJECT AND MATERIAL FILE
+########################################################################################################################################
+
+
+#Create New Object and Material File
+binary_file = open(sys.argv[1].split(".")[0]+".obj", "w")
+material_file = open(sys.argv[1].split(".")[0]+".mtl", "w")
+
+#Write Object File Header
+binary_file.write("# GooseTools Map Extractor V." + str(major) + "." + str(minor))
+binary_file.write("\n# https://github.com/GrantHilgert/GooseTools\n")
+
+#Write Material defintion to Object file
+mtllib_file_name=sys.argv[1].split("\\")[len(sys.argv[1].split("\\"))-1].split(".")[0]
+binary_file.write("mtllib " + str(mtllib_file_name) + ".mtl\n")
+
+
+
+
+########################################################################################################################################
+# BUILD OBJECTS
+########################################################################################################################################
+
+
+
+
+
+
+submesh_structure_index=0
+
+
+for object_index in range(submesh_index):
+    print("DEBUG - Writting index: " + str(object_index))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -68,6 +315,26 @@ def get_asset_type(num_of_vertex, size_of_vertex_buffer):
         else:
             print("Model Structure: "+ Fore.RED + "[UNKNOWN]" +Style.RESET_ALL) 
             return "fail"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
