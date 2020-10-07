@@ -197,16 +197,16 @@ else:
 
 
 #Create New Object and Material File
-binary_file = open(sys.argv[1].split(".")[0]+".obj", "w")
+object_file = open(sys.argv[1].split(".")[0]+".obj", "w")
 material_file = open(sys.argv[1].split(".")[0]+".mtl", "w")
 
 #Write Object File Header
-binary_file.write("# GooseTools Map Extractor V." + str(major) + "." + str(minor))
-binary_file.write("\n# https://github.com/GrantHilgert/GooseTools\n")
+object_file.write("# GooseTools Map Extractor V." + str(major) + "." + str(minor))
+object_file.write("\n# https://github.com/GrantHilgert/GooseTools\n")
 
 #Write Material defintion to Object file
 mtllib_file_name=sys.argv[1].split("\\")[len(sys.argv[1].split("\\"))-1].split(".")[0]
-binary_file.write("mtllib " + str(mtllib_file_name) + ".mtl\n")
+object_file.write("mtllib " + str(mtllib_file_name) + ".mtl\n")
 
 
 
@@ -214,59 +214,106 @@ binary_file.write("mtllib " + str(mtllib_file_name) + ".mtl\n")
 ########################################################################################################################################
 # BUILD OBJECTS
 ########################################################################################################################################
+global temp_index_buffer
+global temp_vertex_buffer
+global temp_face_buffer
+
+
+def get_object_index_start(object_index):
+    return int(submesh_structure_array[object_index*6])
+
+def get_object_index_count(object_index):
+    return int(submesh_structure_array[object_index*6+1])
+
+def get_object_topology(object_index):
+    return int(submesh_structure_array[object_index*6+2])
+
+def get_object_base_vertex(object_index):
+    return int(submesh_structure_array[object_index*6+3])
+
+def get_object_first_vertex(object_index):
+    return int(submesh_structure_array[object_index*6+4])
+
+def get_object_vertex_count(object_index):
+    return int(submesh_structure_array[object_index*6+5])
+
+
+def fill_index_buffer(object_index):
+    index_start=get_object_index_start(object_index)
+    index_count=get_object_index_count(object_index)
+    temp_face_buffer = np.zeros(index_count, dtype=int)
+    for face_index in range(index_start,int((index_start+index_count))):
+        temp_face=int(str(hex(submesh_data_array[((face_index-index_start)*2+1) + index_start]).split('x')[-1])+str(hex(submesh_data_array[((face_index-index_start)*2) + index_start]).split('x')[-1]),16)+1
+
+        temp_face_buffer[face_index-index_start]=temp_face
+
+    return temp_face_buffer
 
 
 
+def fill_vertex_buffer(object_index):
+    vertex_start=get_object_first_vertex(object_index)
+    vertex_count=get_object_vertex_count(object_index)
+    temp_vertex_buffer = np.zeros(vertex_count*3, dtype=float)
+    for vertex_index in range(vertex_start,int((vertex_start+vertex_count))):
+        
+        vertex_x=submesh_data_array[((vertex_index-vertex_start)*3) + vertex_start]*255+submesh_data_array[((vertex_index-vertex_start)*3+1) + vertex_start]
+        vertex_y=submesh_data_array[((vertex_index-vertex_start)*3+2) + vertex_start]*255+submesh_data_array[((vertex_index-vertex_start)*3+3) + vertex_start]
+        vertex_z=submesh_data_array[((vertex_index-vertex_start)*3+4) + vertex_start]*255+submesh_data_array[((vertex_index-vertex_start)*3+5) + vertex_start]
+     
+        temp_vertex_buffer[(vertex_index-vertex_start)*3]=float(vertex_x)
+        temp_vertex_buffer[(vertex_index-vertex_start)*3+1]=float(vertex_y)
+        temp_vertex_buffer[(vertex_index-vertex_start)*3+2]=float(vertex_z)
+
+    return temp_vertex_buffer
 
 
 
 submesh_structure_index=0
 
-
-for object_index in range(submesh_index):
-    print("DEBUG - Writting index: " + str(object_index))
-
-
+#For each object in the submesh index
+for object_index in range(submesh_index+1):
+    print("Writting Object: "+ Fore.CYAN + "[UGG_MAP_OBJECT."+ str(f'{object_index:03}') +"]" +Style.RESET_ALL) 
 
 
 
 
+    submesh_index_start=get_object_index_start(object_index)
+    submesh_index_count=get_object_index_count(object_index)
+    submesh_vertex_start=get_object_first_vertex(object_index)
+    submesh_vertex_count=get_object_vertex_count(object_index)
 
-
-
-
-
-
-
-
-
-
-
-
+    print("DEBUG - INDEX START: " + str(get_object_index_start(object_index)))
+    print("DEBUG - INDEX COUNT: " + str(get_object_index_count(object_index)))
+    print("DEBUG - VERTEX START: " + str(get_object_first_vertex(object_index)))
+    print("DEBUG - VERTEX COUNT: " + str(get_object_vertex_count(object_index)))
+    
+    object_file.write("o UGG_MAP_OBJECT."+ str(f'{object_index:03}'))
+    
 
 
 
 
 
 
+    submesh_face_buffer=fill_index_buffer(object_index)
+    submesh_vertex_buffer=fill_vertex_buffer(object_index)
+
+    for vertex_index in range(int(len(submesh_vertex_buffer)/3)):
+        object_file.write("v ")
+        object_file.write(str(round(submesh_vertex_buffer[vertex_index*3] ,7)))
+        object_file.write(" ")
+        object_file.write(str(round(submesh_vertex_buffer[vertex_index*3+1] ,7)))
+        object_file.write(" ")
+        object_file.write(str(round(submesh_vertex_buffer[vertex_index*3+2] ,7)))
+        object_file.write("\n")
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+    #print(str(submesh_face_buffer))
+    #print(str(submesh_vertex_buffer))
 
 
 
@@ -274,6 +321,47 @@ for object_index in range(submesh_index):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+print("Map Extraction: "+ Fore.GREEN + "[COMPLETE]" +Style.RESET_ALL)  
 
 
 
