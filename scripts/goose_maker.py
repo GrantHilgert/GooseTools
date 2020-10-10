@@ -29,6 +29,23 @@ today = date.today()
 #FUNCTION DEFINITIONS
 ########################################################################################################################################
 
+
+def get_complex_vertex_buffer_block_size():
+    return 40
+def get_complex_vertex_buffer_size(vertex_buffer_size):
+    return vertex_buffer_size*get_complex_vertex_buffer_block_size()
+
+def get_complex_color_buffer_block_size():
+    return 12
+def get_complex_color_buffer_size(vertex_buffer_size):
+    return vertex_buffer_size*get_complex_color_buffer_block_size()
+
+def get_complex_bone_buffer_block_size():
+    return 32
+def get_complex_bone_buffer_size(vertex_buffer_size):
+    return vertex_buffer_size*get_complex_bone_buffer_block_size()
+  
+
 # returns #num1 #num2 #num3
 # face_number is zero indexed
 def get_obj_face(face_number):
@@ -38,14 +55,57 @@ def get_obj_face(face_number):
     vertex_2=index_buffer[f*12+6] + index_buffer[f*12+7] + index_buffer[f*12+4] + index_buffer[f*12+5]
     vertex_3=index_buffer[f*12+2] + index_buffer[f*12+3] + index_buffer[f*12+0] + index_buffer[f*12+1]
 
-    pos_a=int((pos_a_msb+pos_a_lsb),16)+1
-    pos_b=int((pos_b_msb+pos_b_lsb),16)+1
-    pos_c=int((pos_c_msb+pos_c_lsb),16)+1
-
     return str(int(vertex_1,16)) + " " + str(int(vertex_2,16)) + " " + str(int(vertex_3,16))
 
 
 
+def get_obj_vertex(vertex_number,vertex_buffer_size):
+    v=vertex_number*get_complex_vertex_buffer_block_size()*2   
+    word_vertex_x=vertex_buffer[v]+vertex_buffer[v+1]+vertex_buffer[v+2]+vertex_buffer[v+3]+vertex_buffer[v+4]+vertex_buffer[v+5]+vertex_buffer[v+6]+vertex_buffer[v+7]
+    word_vertex_y=vertex_buffer[v+8]+vertex_buffer[v+9]+vertex_buffer[v+10]+vertex_buffer[v+11]+vertex_buffer[v+12]+vertex_buffer[v+13]+vertex_buffer[v+14]+vertex_buffer[v+15]
+    word_vertex_z=vertex_buffer[v+16]+vertex_buffer[v+17]+vertex_buffer[v+18]+vertex_buffer[v+19]+vertex_buffer[v+20]+vertex_buffer[v+21]+vertex_buffer[v+22]+vertex_buffer[v+23]
+
+    float_vertex_x=round(float(str(struct.unpack('f', bytes.fromhex(word_vertex_x))).strip('(),')),7)
+    float_vertex_y=round(float(str(struct.unpack('f', bytes.fromhex(word_vertex_y))).strip('(),')),7)
+    float_vertex_z=round(float(str(struct.unpack('f', bytes.fromhex(word_vertex_z))).strip('(),')),7)
+
+    return str(float_vertex_x) + " " + str(float_vertex_y) + " " + str(float_vertex_z)
+
+
+
+def get_obj_normal(vertex_number,vertex_buffer_size):
+    v=vertex_number*get_complex_vertex_buffer_block_size()*2   
+    word_normal_x=vertex_buffer[v+24]+vertex_buffer[v+25]+vertex_buffer[v+26]+vertex_buffer[v+27]+vertex_buffer[v+28]+vertex_buffer[v+29]+vertex_buffer[v+30]+vertex_buffer[v+31]
+    word_normal_y=vertex_buffer[v+32]+vertex_buffer[v+33]+vertex_buffer[v+34]+vertex_buffer[v+35]+vertex_buffer[v+36]+vertex_buffer[v+37]+vertex_buffer[v+38]+vertex_buffer[v+39]
+    word_normal_z=vertex_buffer[v+40]+vertex_buffer[v+41]+vertex_buffer[v+42]+vertex_buffer[v+43]+vertex_buffer[v+44]+vertex_buffer[v+45]+vertex_buffer[v+46]+vertex_buffer[v+47]
+
+    float_normal_x=round(float(str(struct.unpack('f', bytes.fromhex(word_normal_x))).strip('(),')),7)
+    float_normal_y=round(float(str(struct.unpack('f', bytes.fromhex(word_normal_y))).strip('(),')),7)
+    float_normal_z=round(float(str(struct.unpack('f', bytes.fromhex(word_normal_z))).strip('(),')),7)
+
+    return str(float_normal_x) + " " + str(float_normal_y) + " " + str(float_normal_z)
+
+def get_obj_uv(vertex_number,vertex_buffer_size):
+    v=get_complex_vertex_buffer_size()+vertex_number*get_complex_color_buffer_block_size()*2 
+    word_s=vertex_buffer[v]+vertex_buffer[v+1]+vertex_buffer[v+2]+vertex_buffer[v+3]+vertex_buffer[v+4]+vertex_buffer[v+5]+vertex_buffer[v+6]+vertex_buffer[v+7]
+    word_t=vertex_buffer[v+8]+vertex_buffer[v+9]+vertex_buffer[v+10]+vertex_buffer[v+11]+vertex_buffer[v+12]+vertex_buffer[v+13]+vertex_buffer[v+14]+vertex_buffer[v+15]
+
+    float_s=round(float(str(struct.unpack('f', bytes.fromhex(word_s))).strip('(),')),7)
+    float_t=round(float(str(struct.unpack('f', bytes.fromhex(word_t))).strip('(),')),7)
+
+    return str(float_s) + " " + str(float_t)
+
+
+def get_obj_color(vertex_number,vertex_buffer_size):
+    v=get_complex_vertex_buffer_size()+vertex_number*get_complex_color_buffer_block_size()*2
+    
+    byte_red=vertex_buffer[v+16]+vertex_buffer[v+17]
+    byte_green=vertex_buffer[v+18]+vertex_buffer[v+19]
+    byte_blue=vertex_buffer[v+20]+vertex_buffer[v+21]
+    #error check
+    color_terminator=vertex_buffer[v+22]+vertex_buffer[v+23]
+    if color_terminator != "ff":
+        print(Fore.RED + "Data Error: Vertex: " + str(vertex_number) + " color buffer Corrupt" +Style.RESET_ALL)
 
 
 
@@ -54,10 +114,39 @@ def get_obj_face(face_number):
 
 
 
+    data_pos_index="UV X"
+    for long_index in range(int(get_complex_color_buffer_block_size()/4)):
+        #print("POS: " + data_pos_index + " : " + str(long_index))
+        temp_string=""
+        #Create a LONG string from 8 characters
+        for temp_index in range(8):
+            #collect one double from the string
+            temp_string+=vertex_buffer[(int(get_complex_vertex_buffer_block_size()/4)+long_index)*8+temp_index]
 
+            #SKIP the Vertex Data this round
+        if data_pos_index.split()[0].strip() =="UV":    
+            if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
+                data_pos_index="UV Y"
+                write_flag=1
+            if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:     
+                data_pos_index="COLOR"
+                write_flag=1
+        if data_pos_index.split()[0].strip() =="COLOR" and write_flag == 0:     
 
+            skip_count=0
+            write_flag=1
 
+            #Add Material to buffer
+            current_material=str(temp_string)        
+            material_buffer+=current_material + " "
 
+            if current_material != old_material:
+                old_material=current_material
+                material_list+=current_material + " "
+                print("Found Complex Material"+ Fore.GREEN + "[RAW: " + current_material + " ]" +Style.RESET_ALL)
+            data_pos_index="UV X"
+
+        write_flag=0   
 
 
 #Creates a blender friendly material name
@@ -116,6 +205,13 @@ material_count=0
 asset_file = open(sys.argv[1], "r")
 
 YAML_LINE = asset_file.readlines()
+
+
+global asset_name
+global index_count
+global vertex_count
+global vertex_buffer
+global index_buffer
 
 asset_name='NA'
 index_count='NA'
@@ -191,15 +287,12 @@ for line in YAML_LINE:
     #Copy Vertex Buffer 
     if "_typelessdata:" in line:
         vertex_buffer=str(line.split(":", maxsplit=1)[1].strip())
-    count+=1    #Copy Vertex Buffer 
+        count+=1    #Copy Vertex Buffer 
     
     #Copy Bind Pose Data
     if "m_BindPose:" in line:
-        
-
-
-
-        vertex_buffer=str(line.split(":", maxsplit=1)[1].strip())
+        print("DEBUG - BIND POSE MATRIX")
+        #bind_pose_buffer=str(line.split(":", maxsplit=1)[1].strip())
 
 
 
@@ -243,13 +336,9 @@ if asset_type == "simple":
     vertex_buffer_block_size=(vertex_buffer_size/vertex_count)
     print("Vertex Buffer Block Size: " +Fore.GREEN+ str(vertex_buffer_block_size)+Style.RESET_ALL)
 elif asset_type == "complex":
-    complex_vertex_buffer_size=40*vertex_count
-    complex_color_buffer_size=12*vertex_count
-    complex_bone_buffer_size=32*vertex_count
-    vertex_buffer_block_size=40
-    print("Complex Vertex Buffer Block Size: " +Fore.GREEN+ str(complex_vertex_buffer_size)+Style.RESET_ALL)
-    print("Complex Color and UV Buffer Block Size: " +Fore.GREEN+ str(complex_color_buffer_size)+Style.RESET_ALL)
-    print("Complex Bone Buffer Block Size: " +Fore.GREEN+ str(complex_bone_buffer_size)+Style.RESET_ALL)
+    print("Complex Vertex Buffer Block Size: " +Fore.GREEN+ str(get_complex_vertex_buffer_size(vertex_count))+Style.RESET_ALL)
+    print("Complex Color and UV Buffer Block Size: " +Fore.GREEN+ str(get_complex_color_buffer_size(vertex_count))+Style.RESET_ALL)
+    print("Complex Bone Buffer Block Size: " +Fore.GREEN+ str(get_complex_bone_buffer_size(vertex_count))+Style.RESET_ALL)
 
 #print("Raw Buffers")
 #print("INDEX BUFFER: " + Fore.RED + str(index_buffer)+Style.RESET_ALL)
@@ -410,11 +499,11 @@ write_flag=0
 ########################################################################################################################################
 #Process Colors
 ########################################################################################################################################
-print("DEBUG - SIMPLE COLOR for loop size:" + str(int(vertex_count*vertex_buffer_block_size/4)))
+print("DEBUG - SIMPLE COLOR for loop size:" + str(int(vertex_count*get_complex_vertex_buffer_block_size()/4)))
 material_buffer_write_count=0
 if asset_type == "simple":
     data_pos_index="POS X"
-    for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
+    for long_index in range(int(vertex_count*get_complex_vertex_buffer_block_size()/4)):
 
         temp_string=""
         #for each byte
@@ -476,13 +565,13 @@ if asset_type == "simple":
 # Th
 elif asset_type == "complex":
     data_pos_index="UV X"
-    for long_index in range(int(complex_color_buffer_size/4)):
+    for long_index in range(int(get_complex_color_buffer_block_size()/4)):
         #print("POS: " + data_pos_index + " : " + str(long_index))
         temp_string=""
         #Create a LONG string from 8 characters
         for temp_index in range(8):
             #collect one double from the string
-            temp_string+=vertex_buffer[(int(complex_vertex_buffer_size/4)+long_index)*8+temp_index]
+            temp_string+=vertex_buffer[(int(get_complex_vertex_buffer_block_size()/4)+long_index)*8+temp_index]
 
             #SKIP the Vertex Data this round
         if data_pos_index.split()[0].strip() =="UV":    
@@ -543,14 +632,14 @@ collada_vertex_source_name=str(asset_name)+"-positions"
 collada_vetex_count=vertex_count
 
 collada_normal_array_name=str(asset_name)+"-mesh-normals-array"
-collad_normal_source_id=str(asset_name)+"-mesh-normals"
-collad_normal_source_name=str(asset_name)+"-normals"
+collada_normal_source_id=str(asset_name)+"-mesh-normals"
+collada_normal_source_name=str(asset_name)+"-normals"
 collada_normal_count=vertex_count
 
 
 collada_color_array_name=str(asset_name)+"-mesh-colors-array"
-collad_color_source_id=str(asset_name)+"-mesh-colors"
-collad_color_source_name=str(asset_name)+"-colors"
+collada_color_source_id=str(asset_name)+"-mesh-colors"
+collada_color_source_name=str(asset_name)+"-colors"
 collada_color_count=vertex_count
 
 
@@ -572,7 +661,7 @@ collada_file.write("<asset>\n")
 
 collada_file.write("<contributor>\n")
 collada_file.write("<author>GooseTools</author>\n")
-collada_file.write("<authoring_tool>GooseTool's version: " + str(major) + "." + str(minor)"</authoring_tool>\n")
+collada_file.write("<authoring_tool>GooseTool's version: " + str(major) + "." + str(minor) + "</authoring_tool>\n")
 collada_file.write("</contributor>\n")
 collada_file.write("<created>2020-10-10T13:17:06</created>\n")
 collada_file.write("<modified>" + today.strftime("%Y-%m-%d")+"T13:17:06</modified>\n")
@@ -654,7 +743,7 @@ collada_file.write("</material>\n")
 collada_file.write("</library_materials>\n")
 collada_file.write("<library_geometries>\n")
 
-collada_file.write("<geometry id=\"" + collada_gemotery_id + " \" name=\"" + collada_name + "\">\n")
+collada_file.write("<geometry id=\"" + collada_gemotery_id + "\" name=\"" + collada_name + "\">\n")
 collada_file.write("<mesh>\n")
 
 
@@ -665,15 +754,19 @@ collada_normal_array_name
 collada_normal_source_id
 
 collada_file.write("<source id=\"" + collada_vertex_source_id + "\">\n")
-collada_file.write("<float_array id=\"" + collada_vertex_array_name + "\" count=\""+str(collada_vetex_count*3)+"\">")
+collada_file.write("<float_array id=\"" + collada_vertex_array_name + "\" count=\""+str(collada_vetex_count*3)+"\"> ")
 
 
 
 #Vertex go here
+for collada_vertex in range(int(collada_vetex_count)):
+    collada_file.write(get_obj_vertex(collada_vertex,collada_vetex_count) + " ")
+
 
 
 
 collada_file.write("</float_array>\n")
+
 collada_file.write("<technique_common>\n")
 collada_file.write("<accessor count=\""+str(collada_vetex_count)+"\" offset=\"0\" source=\"#" + collada_vertex_source_id + "\" stride=\"3\">\n")
 collada_file.write("<param name=\"X\" type=\"float\" />\n")
@@ -687,12 +780,12 @@ collada_file.write("</source>\n")
 # Write COLLADA Normal
 #########################
 
-collada_file.write("<source id=\"" + collada_normal_source_id + "\" name=\"" + collada_vertex_source_name + "\">\n")
-collada_file.write("<float_array id=\"" + collada_normal_array_name + "\" count=\""+str(collada_normal_count*3)+"\">")
-
-
+collada_file.write("<source id=\"" + collada_normal_source_id + "\" name=\"" + collada_normal_source_name + "\">\n")
+collada_file.write("<float_array id=\"" + collada_normal_array_name + "\" count=\""+str(collada_normal_count*3)+"\"> ")
 
 #Normals go here
+for collada_normal in range(int(collada_normal_count)):
+    collada_file.write(get_obj_normal(collada_normal,collada_normal_count) + " ")
 
 collada_file.write("</float_array>\n")
 collada_file.write("<technique_common>\n")
@@ -729,19 +822,20 @@ collada_file.write("<input offset=\"0\" semantic=\"VERTEX\" source=\"#" + collad
 collada_file.write("<input offset=\"0\" semantic=\"NORMAL\" source=\"#" + collada_normal_source_id + "\" />\n")
 #COLOR PLACEHOLDER 
 #collada_file.write("<input offset=\"0\" semantic=\"COLOR\" source=\"#" + collada_color_source_id + "\" />\n")
-
+#UV PLACEHOLDER 
+#collada_file.write("<input offset=\"0\" semantic=\"TEXCOORD\" source=\"#" + collada_uv_source_id + "\" />\n")
 
 
 #Write number of vertex for each face. Our data is 3 all the time because triangles
-collada_file.write("<vcount>\n")
-for vcount in int(index_count):
+collada_file.write("<vcount>")
+for vcount in range(int(index_count/3)):
     collada_file.write("3 ")
 collada_file.write("</vcount>\n")
 
 
 #Write the index buffer
 collada_file.write("<p>")
-for face in int(index_count/3):
+for face in range(int(index_count/3)):
     #Write Vertex
     collada_file.write(get_obj_face(face) + " ")
     #Write Normal (Shares position with vertex)
@@ -760,6 +854,21 @@ collada_file.write("</library_geometries>\n")
 
 
 collada_file.write("<library_controllers>\n")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 collada_file.write("</library_controllers>\n")
 
 #########################
@@ -767,28 +876,28 @@ collada_file.write("</library_controllers>\n")
 #########################
 
 collada_file.write("<library_visual_scenes>\n")
-collada_file.write("<visual_scene id=\"Root\" name=\"Root\">\n")
-collada_file.write("<node id=\"jam\"  name=\"jam\" type=\"NODE\">\n")
-collada_file.write("<matrix sid=\"matrix\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
-collada_file.write("<instance_geometry url=\"#meshId0\">\n")
-collada_file.write("<bind_material>\n")
-collada_file.write("<technique_common>\n")
-collada_file.write("<instance_material symbol=\"defaultMaterial\" target=\"#m0mat\">\n")
-collada_file.write("</instance_material>\n")
-collada_file.write("</technique_common>\n")
-collada_file.write("</bind_material>\n")
-collada_file.write("</instance_geometry>\n")
-collada_file.write("</node>\n")
-collada_file.write("<node id=\"Node_000000000349DD80\"  name=\"Node_000000000349DD80\" type=\"NODE\">\n")
-collada_file.write("<matrix sid=\"matrix\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
-collada_file.write(" </node>\n")
-collada_file.write("</visual_scene>\n")
+#collada_file.write("<visual_scene id=\"Root\" name=\"Root\">\n")
+#collada_file.write("<node id=\"jam\"  name=\"jam\" type=\"NODE\">\n")
+#collada_file.write("<matrix sid=\"matrix\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
+#collada_file.write("<instance_geometry url=\"#meshId0\">\n")
+#collada_file.write("<bind_material>\n")
+#collada_file.write("<technique_common>\n")
+#collada_file.write("<instance_material symbol=\"defaultMaterial\" target=\"#m0mat\">\n")
+#collada_file.write("</instance_material>\n")
+#collada_file.write("</technique_common>\n")
+#collada_file.write("</bind_material>\n")
+#collada_file.write("</instance_geometry>\n")
+#collada_file.write("</node>\n")
+#collada_file.write("<node id=\"Node_000000000349DD80\"  name=\"Node_000000000349DD80\" type=\"NODE\">\n")
+#collada_file.write("<matrix sid=\"matrix\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
+#collada_file.write(" </node>\n")
+#collada_file.write("</visual_scene>\n")
 collada_file.write("</library_visual_scenes>\n")
 
 
-collada_file.write("<scene>\n")
-collada_file.write("<instance_visual_scene url=\"#Root\" />\n")
-collada_file.write("</scene>\n")
+#collada_file.write("<scene>\n")
+#collada_file.write("<instance_visual_scene url=\"#Root\" />\n")
+#collada_file.write("</scene>\n")
 
 collada_file.write("</COLLADA>\n")
 
@@ -807,289 +916,6 @@ collada_file.close()
 ########################################################################################################################################
 #WRITE VERTEX
 ########################################################################################################################################
-
-
-data_pos_index="POS X"
-
-#number of bytes to skip until next write
-skip_count=0
-#Dont write on the same loop
-write_flag=0
-#Write Vertex Data and collect material data at the same time to save time
-
-
-
-
-
-print("VERTEX RANGE: " + str(int(vertex_count*vertex_buffer_block_size/4)))
-for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
-    #print("POS: " + data_pos_index)
-    #print(str(long_index))
-    temp_string=""
-    #for each byte
-    for temp_index in range(8):
-        #collect one double from the string
-        temp_string+=vertex_buffer[long_index*8+temp_index]
-     
-    if data_pos_index.split()[0].strip() =="POS":    
-        if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
-            binary_file.write("v ")
-            binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)))
-            binary_file.write(" ")         
-            data_pos_index="POS Y"
-            write_flag=1
-        if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:
-            binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)))
-            binary_file.write(" ")          
-            data_pos_index="POS Z"
-            write_flag=1
-        if data_pos_index.split()[1].strip() =="Z" and write_flag == 0:          
-            binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)))
-            binary_file.write("\n")             
-            data_pos_index="NORM X"
-            write_flag=1
-
-            #write the normals instead
-    if data_pos_index.split()[0].strip() =="NORM":    
-        if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
-            data_pos_index="NORM Y"
-            write_flag=1
-        if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:
-            data_pos_index="NORM Z"
-            write_flag=1
-        if data_pos_index.split()[1].strip() =="Z" and write_flag == 0:     
-            data_pos_index="SKIP"
-            write_flag=1
-
-    if data_pos_index.split()[0].strip() == "SKIP" and write_flag == 0:
-        skip_count+=1
-    
-
-    if asset_type == "simple":
-        if data_pos_index.split()[0] =="SKIP" and skip_count==5 and write_flag == 0:
-            data_pos_index="COLOR"
-            skip_count=0
-            write_flag=1
-            data_pos_index="POS X"
-    
-    elif asset_type == "complex":
-        if data_pos_index.split()[0] =="SKIP" and skip_count==4 and write_flag == 0:
-            data_pos_index="COLOR"
-            skip_count=0
-            write_flag=1
-            data_pos_index="POS X"
-
-
-    write_flag=0
-    #print(data_pos_index + str(skip_count))
-
-
-
-
-
-########################################################################################################################################
-#WRITE NORMALS
-########################################################################################################################################
-
-
-
-#End New Vertex Write and Color Extraction Routine
-####################################################################
-#Being New Normal Write Routine
-
-#data_pos_index="NORM X" - I think this was a bug. changed to POS X V1.00
-data_pos_index="POS X"
-#Write Normal Data
-normal_offset=12
-print("NORMAL RANGE: " + str(int(vertex_count*vertex_buffer_block_size/4)))
-for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
-    #print("POS: " + data_pos_index)
-    temp_string=""
-    #for each byte
-    for temp_index in range(8):
-        #collect one double from the string
-        temp_string+=vertex_buffer[long_index*8+temp_index]
- 
-        #SKIP the Vertex Data this round
-    if data_pos_index.split()[0].strip() =="POS":    
-        if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
-            data_pos_index="POS Y"
-            write_flag=1
-        if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:     
-            data_pos_index="POS Z"
-            write_flag=1
-        if data_pos_index.split()[1].strip() =="Z" and write_flag == 0:                     
-            data_pos_index="NORM X"
-            write_flag=1
-
-
-            #write the normals instead
-    if data_pos_index.split()[0].strip() =="NORM":    
-        if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
-            binary_file.write("vn ")
-            binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)))
-            binary_file.write(" ")           
-            data_pos_index="NORM Y"
-            write_flag=1
-        if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:
-            binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)))
-            binary_file.write(" ")           
-            data_pos_index="NORM Z"
-            write_flag=1
-        if data_pos_index.split()[1].strip() =="Z" and write_flag == 0:
-            binary_file.write(str(round(float(str(struct.unpack('f', bytes.fromhex(temp_string))).strip('(),')),7)))
-            binary_file.write("\n")           
-            data_pos_index="SKIP"
-            write_flag=1
-    if data_pos_index.split()[0] =="SKIP" and write_flag == 0:
-        skip_count+=1
-
-    if asset_type == "simple":
-        if data_pos_index.split()[0] =="SKIP" and skip_count==5 and write_flag == 0:
-            data_pos_index="COLOR"
-            skip_count=0
-            write_flag=1
-            data_pos_index="POS X"
-    
-    elif asset_type == "complex":
-        if data_pos_index.split()[0] =="SKIP" and skip_count==4 and write_flag == 0:
-            data_pos_index="COLOR"
-            skip_count=0
-            write_flag=1
-            data_pos_index="POS X"
-
-    write_flag=0
-        
-
-#End New Normal Write Routine
-####################################################################
-#Begin Face Write
-
-
-
-
-
-
-binary_file.write("g " + str(asset_name) + "_0\n")
-
-
-
-
-current_face_color=""
-old_face_color=""
-
-old_material=""
-current_material=""
-
-
-#ver 0.3: Index Buffer is aranged LSB:MSB
-#ver 0.1: Face objects strings are reveresed how they appear in the data stream 
-#Index Buffer 
-index_buffer_count=0
-byte_count=0
-pos_a_r=''
-pos_b_r=''
-pos_c_r=''
-
-#MSB
-pos_a_msb=''
-pos_b_msb=''
-pos_c_msb=''
-#LSB
-pos_a_lsb=''
-pos_b_lsb=''
-pos_c_lsb=''
-
-
-
-
-pos_a=''
-pos_b=''
-pos_c=''
-
-#for item in range(len(material_buffer.split())):
-    #print("item " + str(item) + " : "+ material_buffer.split()[item])
-
-skip_first_word=1
-for byte in index_buffer:
-    byte_count+=1
-    index_buffer_count+=1
-    #print("Byte: " + str(byte_count) + " block: " + str(block_count)+ " skip: "+str(skip_count)+"\n")
-    if byte_count == 4 and skip_first_word == 0:
-        skip_first_word = 1
-        byte_count=0
-
-    if skip_first_word == 1:
-        if byte_count > 0 and byte_count < 5:
-            #POS A
-            #print("POS A: " + byte)
-            if byte_count > 0 and byte_count < 3:
-                pos_a_lsb+=str(byte)
-            elif byte_count > 2 and byte_count < 5:
-                pos_a_msb+=str(byte)
-            else:
-                print("INDEX BUFFER PARSE ERROR A: " + str(byte) + " Count: " + str(index_buffer_count))
-        elif byte_count > 4 and byte_count < 9:
-            #POS B
-            #print("POS B: " + byte)
-            if byte_count > 4 and byte_count < 7:
-                pos_b_lsb+=str(byte)
-            elif byte_count > 6 and byte_count < 9:
-                pos_b_msb+=str(byte)
-            else:
-                print("INDEX BUFFER PARSE ERROR B: " + str(byte) + " Count: " + str(index_buffer_count))
-        elif byte_count > 8 and byte_count < 13:
-            #POS C
-            #print("POS C: " + byte)
-            if byte_count > 8 and byte_count < 11:
-                pos_c_lsb+=str(byte)
-            elif byte_count > 10 and byte_count < 13:
-                pos_c_msb+=str(byte)
-            else:
-                print("INDEX BUFFER PARSE ERROR C: " + str(byte) + " Count: " + str(index_buffer_count))
-        if byte_count == 12:
-            byte_count=0
-
-            #print("Index: " + str(index_buffer_count))
-            #print("A MSB: " + str(pos_a_msb) + "  LSB: " + str(pos_a_lsb) + "  COMBINDED: " + str(pos_a_msb + pos_a_lsb) + "  INT: " + str(int(str(pos_a_msb + pos_a_lsb),16)))
-            #print("B MSB: " + str(pos_b_msb) + "  LSB: " + str(pos_b_lsb) + "  COMBINDED: " + str(pos_b_msb + pos_a_lsb) + "  INT: " + str(int(str(pos_a_msb + pos_a_lsb),16)))
-            #print("C MSB: " + str(pos_b_msb) + "  LSB: " + str(pos_b_lsb) + "  COMBINDED: " + str(pos_b_msb + pos_a_lsb) + "  INT: " + str(int(str(pos_a_msb + pos_a_lsb),16)))
-            pos_a=int((pos_a_msb+pos_a_lsb),16)+1
-            pos_b=int((pos_b_msb+pos_b_lsb),16)+1
-            pos_c=int((pos_c_msb+pos_c_lsb),16)+1
-
-            #print(str(pos_a)+" "+str(pos_b))
-            print("Material Buffer Write Count: " + str(material_buffer_write_count) + " POS A: " + str(pos_a-1))
-            if material_buffer.split()[pos_a-1] == material_buffer.split()[pos_b-1]:
-                current_material=material_buffer.split()[pos_a-1]
-            elif material_buffer.split()[pos_a-1] == material_buffer.split()[pos_c-1]:
-                current_material=material_buffer.split()[pos_a-1]
-            elif material_buffer.split()[pos_b-1] == material_buffer.split()[pos_c-1]:
-                current_material=material_buffer.split()[pos_b-1]
-            elif material_buffer.split()[pos_a-1] == material_buffer.split()[pos_c-1]:
-                current_material=material_buffer.split()[pos_b-1]                  
-
-            if current_material != old_material:
-                old_material=current_material
-                material_count_index+=1
-                print("Writting Material: "+ Fore.GREEN + "[ "+ current_material + " ]" +Style.RESET_ALL)
-                binary_file.write("usemtl " + get_material_name(current_material)+"\n")
-
-
-
-            #Clear Buffers
-            pos_a_r=''
-            pos_b_r=''
-            pos_c_r=''
-            #MSB
-            pos_a_msb=''
-            pos_b_msb=''
-            pos_c_msb=''
-            #LSB
-            pos_a_lsb=''
-            pos_b_lsb=''
-            pos_c_lsb=''
-
 
 
 
@@ -1123,12 +949,12 @@ for material_index in range(len(material_list.split())):
 
 
 
-    print(kd_red_hex + " " + kd_green_hex + " " + kd_blue_hex)
+    #print(kd_red_hex + " " + kd_green_hex + " " + kd_blue_hex)
 
     kd_red=(int(kd_red_hex,16))/255
     kd_green=(int(kd_green_hex,16))/255
     kd_blue=(int(kd_blue_hex,16))/255
-    print(str(kd_red) + " " + str(kd_green) + " " + str(kd_blue))
+    #print(str(kd_red) + " " + str(kd_green) + " " + str(kd_blue))
 
     material_count_index+=1
     #material_file.write("# Raw Material: "+ str(material_list.split()[material_index])+"\n")
