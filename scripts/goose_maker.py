@@ -1,4 +1,4 @@
-#GooseTools Asset to .Obj Converter
+#GooseTool's Complex Collada Generator
 major=1
 minor=0
 
@@ -8,7 +8,9 @@ import time
 import progressbar
 import struct
 from string import *
+from datetime import date
 
+#Init Colorama
 init()
 
 print("GooseTool's Complex Asset Utility")
@@ -17,7 +19,7 @@ print("Written by Grant Hilgert")
 print("October 2020")
 
 
-
+today = date.today()
 
 
 
@@ -26,6 +28,34 @@ print("October 2020")
 ########################################################################################################################################
 #FUNCTION DEFINITIONS
 ########################################################################################################################################
+
+# returns #num1 #num2 #num3
+# face_number is zero indexed
+def get_obj_face(face_number):
+
+    f=face_number
+    vertex_1=index_buffer[f*12+10] + index_buffer[f*12+11] + index_buffer[f*12+8] + index_buffer[f*12+9]
+    vertex_2=index_buffer[f*12+6] + index_buffer[f*12+7] + index_buffer[f*12+4] + index_buffer[f*12+5]
+    vertex_3=index_buffer[f*12+2] + index_buffer[f*12+3] + index_buffer[f*12+0] + index_buffer[f*12+1]
+
+    pos_a=int((pos_a_msb+pos_a_lsb),16)+1
+    pos_b=int((pos_b_msb+pos_b_lsb),16)+1
+    pos_c=int((pos_c_msb+pos_c_lsb),16)+1
+
+    return str(int(vertex_1,16)) + " " + str(int(vertex_2,16)) + " " + str(int(vertex_3,16))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -76,7 +106,7 @@ def get_asset_type(num_of_vertex, size_of_vertex_buffer):
 
 
 ########################################################################################################################################
-#PREPROCESS ASSET
+# PREPROCESS ASSET 
 ########################################################################################################################################
 
 
@@ -493,11 +523,283 @@ else:
 
 
 
+########################################################################################################################################
+# Write COLLADA FILE
+########################################################################################################################################
+
+
+
+#####################
+# SIMPLE STRUCTURE
+#####################
+# Variables
+collada_gemotery_id=str(asset_name)+"-mesh"
+collada_name=str(asset_name)
+
+
+collada_vertex_array_name=str(asset_name)+"-mesh-positions-array"
+collada_vertex_source_id=str(asset_name)+"-mesh-positions"
+collada_vertex_source_name=str(asset_name)+"-positions"
+collada_vetex_count=vertex_count
+
+collada_normal_array_name=str(asset_name)+"-mesh-normals-array"
+collad_normal_source_id=str(asset_name)+"-mesh-normals"
+collad_normal_source_name=str(asset_name)+"-normals"
+collada_normal_count=vertex_count
+
+
+collada_color_array_name=str(asset_name)+"-mesh-colors-array"
+collad_color_source_id=str(asset_name)+"-mesh-colors"
+collad_color_source_name=str(asset_name)+"-colors"
+collada_color_count=vertex_count
+
+
+
+collada_face_array_name=""
+collada_face_source_name=""
+collada_face_count=index_count
 
 
 
 
 
+
+
+collada_file = open(sys.argv[1].split(".")[0]+".dae", "w")
+collada_file.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n")
+collada_file.write("<COLLADA xmlns=\"http://www.collada.org/2005/11/COLLADASchema\" version=\"1.4.1\">\n")
+collada_file.write("<asset>\n")
+
+collada_file.write("<contributor>\n")
+collada_file.write("<author>GooseTools</author>\n")
+collada_file.write("<authoring_tool>GooseTool's version: " + str(major) + "." + str(minor)"</authoring_tool>\n")
+collada_file.write("</contributor>\n")
+collada_file.write("<created>2020-10-10T13:17:06</created>\n")
+collada_file.write("<modified>" + today.strftime("%Y-%m-%d")+"T13:17:06</modified>\n")
+collada_file.write("<unit name=\"meter\" meter=\"1\"/>\n")
+collada_file.write("<up_axis>Z_UP</up_axis>\n")
+collada_file.write("</asset>\n")
+#collada_file.write("<camera id=\"Camera-camera\" name=\"Camera\">\n")
+#collada_file.write("<optics>\n")
+#collada_file.write("<technique_common>\n")
+#collada_file.write("<perspective>\n")
+#collada_file.write("<xfov sid="xfov">49.13434</xfov>\n")
+#collada_file.write("<aspect_ratio>1.777778</aspect_ratio>\n")
+#collada_file.write("<znear sid=\"znear\">0.1</znear>\n")
+#collada_file.write("<zfar sid=\"zfar\">100</zfar>\n")
+#collada_file.write("</perspective>\n")
+#collada_file.write("</technique_common>\n")
+#collada_file.write("</optics>\n")
+#collada_file.write("<extra>\n")
+#collada_file.write("<technique profile="blender">\n")
+#collada_file.write("<YF_dofdist>0</YF_dofdist>\n")
+#collada_file.write("<shiftx>0</shiftx>\n")
+#collada_file.write("<shifty>0</shifty>\n")
+#collada_file.write("</technique>\n")
+#collada_file.write("</extra>\n")
+#collada_file.write("</camera>\n")
+#collada_file.write("</library_cameras>\n")
+#collada_file.write("<library_images>\n")
+#collada_file.write("<image id="character_Texture_png" name="character_Texture_png">\n")
+#collada_file.write("<init_from>character%20Texture.png</init_from>\n")
+#collada_file.write("</image>\n")
+#collada_file.write("</library_images>\n")
+
+
+collada_file.write("<library_effects>\n")
+collada_file.write("<effect id=\"Material-effect\">\n")
+collada_file.write("<profile_COMMON>\n")
+#collada_file.write("<newparam sid="character_Texture_png-surface">\n")
+#collada_file.write("<surface type="2D">\n")
+#collada_file.write("<init_from>character_Texture_png</init_from>\n")
+#collada_file.write(" </surface>\n")
+#collada_file.write("</newparam>\n")
+#collada_file.write("<newparam sid="character_Texture_png-sampler">\n")
+#collada_file.write("<sampler2D>\n")
+#collada_file.write("<source>character_Texture_png-surface</source>\n")
+#collada_file.write("</sampler2D>\n")
+#collada_file.write("</newparam>\n")
+
+collada_file.write("<technique sid=\"common\">\n")
+collada_file.write("<phong>\n")
+#collada_file.write("<emission>\n")
+#collada_file.write("<color sid="emission">0 0 0 1</color>\n")
+#collada_file.write("</emission>\n")
+#collada_file.write("<ambient>\n")
+#collada_file.write("<color sid="ambient">0 0 0 1</color>\n")
+#collada_file.write("</ambient>\n")
+#collada_file.write("<diffuse>\n")
+#collada_file.write("<texture texture="character_Texture_png-sampler" texcoord="UVMap"/>\n")
+#collada_file.write("</diffuse>\n")
+#collada_file.write("<specular>\n")
+#collada_file.write("<color sid="specular">0.5 0.5 0.5 1</color>\n")
+#collada_file.write("</specular>\n")
+#collada_file.write("<shininess>\n")
+#collada_file.write("<float sid="shininess">50</float>\n")
+#collada_file.write("</shininess>\n")
+#collada_file.write("<index_of_refraction>\n")
+#collada_file.write("<float sid="index_of_refraction">1</float>\n")
+#collada_file.write("</index_of_refraction>\n")
+
+
+collada_file.write("</phong>\n")
+collada_file.write("</technique>\n")
+collada_file.write("</profile_COMMON>\n")
+collada_file.write("</effect>\n")
+collada_file.write("</library_effects>\n")
+collada_file.write("<library_materials>\n")
+collada_file.write("<material id\"Material-material\" name=\"Material\">\n")
+collada_file.write("<instance_effect url=\"#Material-effect\"/>\n")
+collada_file.write("</material>\n")
+collada_file.write("</library_materials>\n")
+collada_file.write("<library_geometries>\n")
+
+collada_file.write("<geometry id=\"" + collada_gemotery_id + " \" name=\"" + collada_name + "\">\n")
+collada_file.write("<mesh>\n")
+
+
+#########################
+# Write COLLADA Vertex
+#########################
+collada_normal_array_name
+collada_normal_source_id
+
+collada_file.write("<source id=\"" + collada_vertex_source_id + "\">\n")
+collada_file.write("<float_array id=\"" + collada_vertex_array_name + "\" count=\""+str(collada_vetex_count*3)+"\">")
+
+
+
+#Vertex go here
+
+
+
+collada_file.write("</float_array>\n")
+collada_file.write("<technique_common>\n")
+collada_file.write("<accessor count=\""+str(collada_vetex_count)+"\" offset=\"0\" source=\"#" + collada_vertex_source_id + "\" stride=\"3\">\n")
+collada_file.write("<param name=\"X\" type=\"float\" />\n")
+collada_file.write("<param name=\"Y\" type=\"float\" />\n")
+collada_file.write("<param name=\"Z\" type=\"float\" />\n")
+collada_file.write("</accessor>\n")
+collada_file.write("</technique_common>\n")
+collada_file.write("</source>\n")
+
+#########################
+# Write COLLADA Normal
+#########################
+
+collada_file.write("<source id=\"" + collada_normal_source_id + "\" name=\"" + collada_vertex_source_name + "\">\n")
+collada_file.write("<float_array id=\"" + collada_normal_array_name + "\" count=\""+str(collada_normal_count*3)+"\">")
+
+
+
+#Normals go here
+
+collada_file.write("</float_array>\n")
+collada_file.write("<technique_common>\n")
+collada_file.write("<accessor count=\""+str(collada_normal_count)+"\" offset=\"0\" source=\"#" + collada_normal_source_id + "\" stride=\"3\">\n")
+collada_file.write("<param name=\"X\" type=\"float\" />\n")
+collada_file.write("<param name=\"Y\" type=\"float\" />\n")
+collada_file.write("<param name=\"Z\" type=\"float\" />\n")
+collada_file.write("</accessor>\n")
+collada_file.write("</technique_common>\n")
+collada_file.write("</source>\n")
+
+
+
+#########################
+# Write COLLADA Colors
+#########################
+
+#collada_color_array_name
+#collad_color_source_id
+#collad_color_source_name
+#collada_color_count
+
+
+
+
+
+
+#######################################
+# Write COLLADA Polylist (.OBJ Faces)
+#######################################
+
+collada_file.write("<polylist count=\""+str(index_count)+"\" material=\"defaultMaterial\">\n")
+collada_file.write("<input offset=\"0\" semantic=\"VERTEX\" source=\"#" + collada_vertex_source_id + "\" />\n")
+collada_file.write("<input offset=\"0\" semantic=\"NORMAL\" source=\"#" + collada_normal_source_id + "\" />\n")
+#COLOR PLACEHOLDER 
+#collada_file.write("<input offset=\"0\" semantic=\"COLOR\" source=\"#" + collada_color_source_id + "\" />\n")
+
+
+
+#Write number of vertex for each face. Our data is 3 all the time because triangles
+collada_file.write("<vcount>\n")
+for vcount in int(index_count):
+    collada_file.write("3 ")
+collada_file.write("</vcount>\n")
+
+
+#Write the index buffer
+collada_file.write("<p>")
+for face in int(index_count/3):
+    #Write Vertex
+    collada_file.write(get_obj_face(face) + " ")
+    #Write Normal (Shares position with vertex)
+    collada_file.write(get_obj_face(face) + " ")
+    #Write Colors
+    #TBD
+
+collada_file.write("</polylist>\n")
+collada_file.write("</mesh>\n")
+collada_file.write("</geometry>\n")
+collada_file.write("</library_geometries>\n")
+
+#########################
+# COLLADA CONTROLELRS
+#########################
+
+
+collada_file.write("<library_controllers>\n")
+collada_file.write("</library_controllers>\n")
+
+#########################
+# COLLADA BINDING
+#########################
+
+collada_file.write("<library_visual_scenes>\n")
+collada_file.write("<visual_scene id=\"Root\" name=\"Root\">\n")
+collada_file.write("<node id=\"jam\"  name=\"jam\" type=\"NODE\">\n")
+collada_file.write("<matrix sid=\"matrix\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
+collada_file.write("<instance_geometry url=\"#meshId0\">\n")
+collada_file.write("<bind_material>\n")
+collada_file.write("<technique_common>\n")
+collada_file.write("<instance_material symbol=\"defaultMaterial\" target=\"#m0mat\">\n")
+collada_file.write("</instance_material>\n")
+collada_file.write("</technique_common>\n")
+collada_file.write("</bind_material>\n")
+collada_file.write("</instance_geometry>\n")
+collada_file.write("</node>\n")
+collada_file.write("<node id=\"Node_000000000349DD80\"  name=\"Node_000000000349DD80\" type=\"NODE\">\n")
+collada_file.write("<matrix sid=\"matrix\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
+collada_file.write(" </node>\n")
+collada_file.write("</visual_scene>\n")
+collada_file.write("</library_visual_scenes>\n")
+
+
+collada_file.write("<scene>\n")
+collada_file.write("<instance_visual_scene url=\"#Root\" />\n")
+collada_file.write("</scene>\n")
+
+collada_file.write("</COLLADA>\n")
+
+
+
+
+
+#########################
+# End of COLLADA File
+#########################
+collada_file.close()
 
 
 
@@ -514,6 +816,11 @@ skip_count=0
 #Dont write on the same loop
 write_flag=0
 #Write Vertex Data and collect material data at the same time to save time
+
+
+
+
+
 print("VERTEX RANGE: " + str(int(vertex_count*vertex_buffer_block_size/4)))
 for long_index in range(int(vertex_count*vertex_buffer_block_size/4)):
     #print("POS: " + data_pos_index)
@@ -702,6 +1009,7 @@ pos_c=''
 
 #for item in range(len(material_buffer.split())):
     #print("item " + str(item) + " : "+ material_buffer.split()[item])
+
 skip_first_word=1
 for byte in index_buffer:
     byte_count+=1
@@ -769,9 +1077,6 @@ for byte in index_buffer:
 
 
 
-            #invert face object order
-            binary_file.write("f " +str(pos_c)+"/"+str(pos_c)+"/"+str(pos_c)+" "+str(pos_b)+"/"+str(pos_b)+"/"+str(pos_b)+" "+str(pos_a)+"/"+str(pos_a)+"/"+str(pos_a))
-            binary_file.write("\n")
             #Clear Buffers
             pos_a_r=''
             pos_b_r=''
@@ -785,8 +1090,6 @@ for byte in index_buffer:
             pos_b_lsb=''
             pos_c_lsb=''
 
-    #progress_bar_count+=1
-    #bar.update(progress_bar_count)
 
 
 
