@@ -30,6 +30,10 @@ today = date.today()
 ########################################################################################################################################
 
 
+#######################
+# COMPLEX ASSETS
+#######################
+
 def get_complex_vertex_buffer_block_size():
     return 40
 def get_complex_vertex_buffer_size(vertex_buffer_size):
@@ -85,8 +89,9 @@ def get_obj_normal(vertex_number,vertex_buffer_size):
 
     return str(float_normal_x) + " " + str(float_normal_y) + " " + str(float_normal_z)
 
+
 def get_obj_uv(vertex_number,vertex_buffer_size):
-    v=get_complex_vertex_buffer_size()+vertex_number*get_complex_color_buffer_block_size()*2 
+    v=get_complex_vertex_buffer_size(vertex_buffer_size)+vertex_number*get_complex_color_buffer_block_size()*2 
     word_s=vertex_buffer[v]+vertex_buffer[v+1]+vertex_buffer[v+2]+vertex_buffer[v+3]+vertex_buffer[v+4]+vertex_buffer[v+5]+vertex_buffer[v+6]+vertex_buffer[v+7]
     word_t=vertex_buffer[v+8]+vertex_buffer[v+9]+vertex_buffer[v+10]+vertex_buffer[v+11]+vertex_buffer[v+12]+vertex_buffer[v+13]+vertex_buffer[v+14]+vertex_buffer[v+15]
 
@@ -95,9 +100,8 @@ def get_obj_uv(vertex_number,vertex_buffer_size):
 
     return str(float_s) + " " + str(float_t)
 
-
 def get_obj_color(vertex_number,vertex_buffer_size):
-    v=get_complex_vertex_buffer_size()+vertex_number*get_complex_color_buffer_block_size()*2
+    v=get_complex_vertex_buffer_size(vertex_buffer_size)*2+vertex_number*get_complex_color_buffer_block_size()*2
     
     byte_red=vertex_buffer[v+16]+vertex_buffer[v+17]
     byte_green=vertex_buffer[v+18]+vertex_buffer[v+19]
@@ -105,7 +109,81 @@ def get_obj_color(vertex_number,vertex_buffer_size):
     #error check
     color_terminator=vertex_buffer[v+22]+vertex_buffer[v+23]
     if color_terminator != "ff":
-        print(Fore.RED + "Data Error: Vertex: " + str(vertex_number) + " color buffer Corrupt" +Style.RESET_ALL)
+        print(Fore.RED + "Data Error: Vertex: " + str(v) + "===>"+ str(vertex_number) + ": " + str(color_terminator) + " != \"ff\" color buffer Corrupt" +Style.RESET_ALL)
+
+    #convert Hex to RGG (0 - 255), then normalize to (0 - 1)
+    normalized_red=(int(byte_red,16))/255
+    normalized_green=(int(byte_green,16))/255
+    normalized_blue=(int(byte_blue,16))/255
+
+    return str(normalized_red) + " " + str(normalized_green) + " " + str(normalized_blue)
+
+
+
+#######################
+# SIMPLE ASSETS
+#######################
+
+def get_simple_vertex_buffer_block_size():
+    return 44
+
+
+def get_simple_obj_vertex(vertex_number,vertex_buffer_size):
+    v=vertex_number*get_simple_vertex_buffer_block_size()*2   
+    word_vertex_x=vertex_buffer[v]+vertex_buffer[v+1]+vertex_buffer[v+2]+vertex_buffer[v+3]+vertex_buffer[v+4]+vertex_buffer[v+5]+vertex_buffer[v+6]+vertex_buffer[v+7]
+    word_vertex_y=vertex_buffer[v+8]+vertex_buffer[v+9]+vertex_buffer[v+10]+vertex_buffer[v+11]+vertex_buffer[v+12]+vertex_buffer[v+13]+vertex_buffer[v+14]+vertex_buffer[v+15]
+    word_vertex_z=vertex_buffer[v+16]+vertex_buffer[v+17]+vertex_buffer[v+18]+vertex_buffer[v+19]+vertex_buffer[v+20]+vertex_buffer[v+21]+vertex_buffer[v+22]+vertex_buffer[v+23]
+
+    float_vertex_x=round(float(str(struct.unpack('f', bytes.fromhex(word_vertex_x))).strip('(),')),7)
+    float_vertex_y=round(float(str(struct.unpack('f', bytes.fromhex(word_vertex_y))).strip('(),')),7)
+    float_vertex_z=round(float(str(struct.unpack('f', bytes.fromhex(word_vertex_z))).strip('(),')),7)
+
+    return str(float_vertex_x) + " " + str(float_vertex_y) + " " + str(float_vertex_z)
+
+
+
+def get_simple_obj_normal(vertex_number,vertex_buffer_size):
+    v=vertex_number*get_simple_vertex_buffer_block_size()*2   
+    word_normal_x=vertex_buffer[v+24]+vertex_buffer[v+25]+vertex_buffer[v+26]+vertex_buffer[v+27]+vertex_buffer[v+28]+vertex_buffer[v+29]+vertex_buffer[v+30]+vertex_buffer[v+31]
+    word_normal_y=vertex_buffer[v+32]+vertex_buffer[v+33]+vertex_buffer[v+34]+vertex_buffer[v+35]+vertex_buffer[v+36]+vertex_buffer[v+37]+vertex_buffer[v+38]+vertex_buffer[v+39]
+    word_normal_z=vertex_buffer[v+40]+vertex_buffer[v+41]+vertex_buffer[v+42]+vertex_buffer[v+43]+vertex_buffer[v+44]+vertex_buffer[v+45]+vertex_buffer[v+46]+vertex_buffer[v+47]
+
+    float_normal_x=round(float(str(struct.unpack('f', bytes.fromhex(word_normal_x))).strip('(),')),7)
+    float_normal_y=round(float(str(struct.unpack('f', bytes.fromhex(word_normal_y))).strip('(),')),7)
+    float_normal_z=round(float(str(struct.unpack('f', bytes.fromhex(word_normal_z))).strip('(),')),7)
+
+    return str(float_normal_x) + " " + str(float_normal_y) + " " + str(float_normal_z)
+
+
+def get_simple_obj_uv(vertex_number,vertex_buffer_size):
+    #This probably isnt correct.
+    v=vertex_number*get_simple_vertex_buffer_block_size()*2 
+    word_s=vertex_buffer[v+48]+vertex_buffer[v+49]+vertex_buffer[v+50]+vertex_buffer[v+51]+vertex_buffer[v+52]+vertex_buffer[v+53]+vertex_buffer[v+54]+vertex_buffer[v+55]
+    word_t=vertex_buffer[v+56]+vertex_buffer[v+57]+vertex_buffer[v+58]+vertex_buffer[v+59]+vertex_buffer[v+60]+vertex_buffer[v+61]+vertex_buffer[v+62]+vertex_buffer[v+63]
+
+    float_s=round(float(str(struct.unpack('f', bytes.fromhex(word_s))).strip('(),')),7)
+    float_t=round(float(str(struct.unpack('f', bytes.fromhex(word_t))).strip('(),')),7)
+
+    return str(float_s) + " " + str(float_t)
+
+
+def get_simple_obj_color(vertex_number,vertex_buffer_size):
+    v=vertex_number*get_simple_vertex_buffer_block_size()*2
+    
+    byte_red=vertex_buffer[v+80]+vertex_buffer[v+81]
+    byte_green=vertex_buffer[v+82]+vertex_buffer[v+83]
+    byte_blue=vertex_buffer[v+84]+vertex_buffer[v+85]
+    #error check
+    color_terminator=vertex_buffer[v+86]+vertex_buffer[v+87]
+    if color_terminator != "ff":
+        print(Fore.RED + "Data Error: Vertex: " + str(v) + "===>"+ str(vertex_number) + ": " + str(color_terminator) + " != \"ff\" color buffer Corrupt" +Style.RESET_ALL)
+
+    #convert Hex to RGG (0 - 255), then normalize to (0 - 1)
+    normalized_red=(int(byte_red,16))/255
+    normalized_green=(int(byte_green,16))/255
+    normalized_blue=(int(byte_blue,16))/255
+
+    return str(normalized_red) + " " + str(normalized_green) + " " + str(normalized_blue)
 
 
 
@@ -114,39 +192,6 @@ def get_obj_color(vertex_number,vertex_buffer_size):
 
 
 
-    data_pos_index="UV X"
-    for long_index in range(int(get_complex_color_buffer_block_size()/4)):
-        #print("POS: " + data_pos_index + " : " + str(long_index))
-        temp_string=""
-        #Create a LONG string from 8 characters
-        for temp_index in range(8):
-            #collect one double from the string
-            temp_string+=vertex_buffer[(int(get_complex_vertex_buffer_block_size()/4)+long_index)*8+temp_index]
-
-            #SKIP the Vertex Data this round
-        if data_pos_index.split()[0].strip() =="UV":    
-            if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
-                data_pos_index="UV Y"
-                write_flag=1
-            if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:     
-                data_pos_index="COLOR"
-                write_flag=1
-        if data_pos_index.split()[0].strip() =="COLOR" and write_flag == 0:     
-
-            skip_count=0
-            write_flag=1
-
-            #Add Material to buffer
-            current_material=str(temp_string)        
-            material_buffer+=current_material + " "
-
-            if current_material != old_material:
-                old_material=current_material
-                material_list+=current_material + " "
-                print("Found Complex Material"+ Fore.GREEN + "[RAW: " + current_material + " ]" +Style.RESET_ALL)
-            data_pos_index="UV X"
-
-        write_flag=0   
 
 
 #Creates a blender friendly material name
@@ -496,119 +541,6 @@ write_flag=0
 
 
 
-########################################################################################################################################
-#Process Colors
-########################################################################################################################################
-print("DEBUG - SIMPLE COLOR for loop size:" + str(int(vertex_count*get_complex_vertex_buffer_block_size()/4)))
-material_buffer_write_count=0
-if asset_type == "simple":
-    data_pos_index="POS X"
-    for long_index in range(int(vertex_count*get_complex_vertex_buffer_block_size()/4)):
-
-        temp_string=""
-        #for each byte
-        for temp_index in range(8):
-            #collect one double from the string
-            temp_string+=vertex_buffer[long_index*8+temp_index]
-     
-            #SKIP the Vertex Data this round
-        if data_pos_index.split()[0].strip() =="POS":    
-            if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
-                data_pos_index="POS Y"
-
-                write_flag=1
-            if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:     
-                data_pos_index="POS Z"
-                write_flag=1
-            if data_pos_index.split()[1].strip() =="Z" and write_flag == 0:                     
-                data_pos_index="NORM X"
-                write_flag=1
-
-
-                #write the normals instead
-        if data_pos_index.split()[0].strip() =="NORM":    
-            if data_pos_index.split()[1].strip() =="X" and write_flag == 0:                  
-                data_pos_index="NORM Y"
-                write_flag=1
-            if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:   
-                data_pos_index="NORM Z"
-                write_flag=1
-            if data_pos_index.split()[1].strip() =="Z" and write_flag == 0: 
-                data_pos_index="SKIP"
-                write_flag=1
-        
-
-        if data_pos_index.split()[0].strip() == "SKIP" and write_flag == 0:
-            #print("SKIP COUNT BEFORE: " + str(skip_count))
-            skip_count+=1
-            #print("SKIP COUNT AFTER: " + str(skip_count))
-            #print("DEBUG - SKIPPING: " + str(skip_count) + " DATA : " + str(temp_string))        
-        if data_pos_index.split()[0] =="SKIP" and skip_count==5 and write_flag == 0:
-            #print("COLOR!!!!!")
-            data_pos_index="COLOR"
-            skip_count=0
-            write_flag=1
-
-            #Add Material to buffer
-            current_material=str(temp_string)        
-            material_buffer+=current_material + " "
-            material_buffer_write_count+=1
-            if current_material != old_material:
-                old_material=current_material
-                material_list+=current_material + " "
-                print("Found Simple Material"+ Fore.GREEN + "[RAW: " + current_material + " ]" +Style.RESET_ALL)
-            data_pos_index="POS X"
-        #print(str(data_pos_index) + " : " + str(temp_string))
-        write_flag=0
-
-
-# Th
-elif asset_type == "complex":
-    data_pos_index="UV X"
-    for long_index in range(int(get_complex_color_buffer_block_size()/4)):
-        #print("POS: " + data_pos_index + " : " + str(long_index))
-        temp_string=""
-        #Create a LONG string from 8 characters
-        for temp_index in range(8):
-            #collect one double from the string
-            temp_string+=vertex_buffer[(int(get_complex_vertex_buffer_block_size()/4)+long_index)*8+temp_index]
-
-            #SKIP the Vertex Data this round
-        if data_pos_index.split()[0].strip() =="UV":    
-            if data_pos_index.split()[1].strip() =="X" and write_flag == 0:          
-                data_pos_index="UV Y"
-                write_flag=1
-            if data_pos_index.split()[1].strip() =="Y" and write_flag == 0:     
-                data_pos_index="COLOR"
-                write_flag=1
-        if data_pos_index.split()[0].strip() =="COLOR" and write_flag == 0:     
-
-            skip_count=0
-            write_flag=1
-
-            #Add Material to buffer
-            current_material=str(temp_string)        
-            material_buffer+=current_material + " "
-
-            if current_material != old_material:
-                old_material=current_material
-                material_list+=current_material + " "
-                print("Found Complex Material"+ Fore.GREEN + "[RAW: " + current_material + " ]" +Style.RESET_ALL)
-            data_pos_index="UV X"
-
-        write_flag=0
-
-
-
-
-
-
-#Write Default color if we dont know the structure
-else:
-    print("FAIL: WRITE DEFAULT COLOR PLACEHOLDER")
-
-
-
 
 
 
@@ -625,10 +557,24 @@ else:
 collada_gemotery_id=str(asset_name)+"-mesh"
 collada_name=str(asset_name)
 
+collada_effect_id="tempMAT-fx"
+collada_effect_name="tempMAT"
 
-collada_vertex_array_name=str(asset_name)+"-mesh-positions-array"
-collada_vertex_source_id=str(asset_name)+"-mesh-positions"
-collada_vertex_source_name=str(asset_name)+"-positions"
+collada_library_material_id=collada_effect_name
+collada_library_material_name=collada_effect_name
+
+
+
+collada_position_array_name=str(asset_name)+"-mesh-positions-array"
+collada_position_source_id=str(asset_name)+"-mesh-positions"
+collada_position_source_name=str(asset_name)+"-positions"
+collada_position_count=vertex_count
+
+
+
+collada_vertex_array_name=str(asset_name)+"-mesh-vertex-array"
+collada_vertex_source_id=str(asset_name)+"-mesh-vertices"
+collada_vertex_source_name=str(asset_name)+"-vertices"
 collada_vetex_count=vertex_count
 
 collada_normal_array_name=str(asset_name)+"-mesh-normals-array"
@@ -695,8 +641,10 @@ collada_file.write("</asset>\n")
 #collada_file.write("</library_images>\n")
 
 
+
+
 collada_file.write("<library_effects>\n")
-collada_file.write("<effect id=\"Material-effect\">\n")
+collada_file.write("<effect id=\"" + str(collada_effect_id) + "\" name=\"" + str(collada_effect_name) + "\">\n")
 collada_file.write("<profile_COMMON>\n")
 #collada_file.write("<newparam sid="character_Texture_png-surface">\n")
 #collada_file.write("<surface type="2D">\n")
@@ -737,7 +685,7 @@ collada_file.write("</profile_COMMON>\n")
 collada_file.write("</effect>\n")
 collada_file.write("</library_effects>\n")
 collada_file.write("<library_materials>\n")
-collada_file.write("<material id\"Material-material\" name=\"Material\">\n")
+collada_file.write("<material id=\"" + str(collada_library_material_id) + "\" name=\"" + str(collada_library_material_name) + "\">\n")
 collada_file.write("<instance_effect url=\"#Material-effect\"/>\n")
 collada_file.write("</material>\n")
 collada_file.write("</library_materials>\n")
@@ -748,27 +696,29 @@ collada_file.write("<mesh>\n")
 
 
 #########################
-# Write COLLADA Vertex
+# Write COLLADA POSITIONS
 #########################
 collada_normal_array_name
 collada_normal_source_id
 
-collada_file.write("<source id=\"" + collada_vertex_source_id + "\">\n")
-collada_file.write("<float_array id=\"" + collada_vertex_array_name + "\" count=\""+str(collada_vetex_count*3)+"\"> ")
+collada_file.write("<source id=\"" + collada_position_source_id + "\">\n")
+collada_file.write("<float_array id=\"" + collada_position_array_name + "\" count=\""+str(collada_position_count*3)+"\"> ")
 
 
 
 #Vertex go here
-for collada_vertex in range(int(collada_vetex_count)):
-    collada_file.write(get_obj_vertex(collada_vertex,collada_vetex_count) + " ")
-
+for collada_position in range(int(collada_position_count)):
+    if asset_type == "complex":
+        collada_file.write(get_obj_vertex(collada_position,collada_position_count) + " ")
+    elif asset_type == "simple":
+        collada_file.write(get_simple_obj_vertex(collada_position,collada_position_count) + " ")
 
 
 
 collada_file.write("</float_array>\n")
 
 collada_file.write("<technique_common>\n")
-collada_file.write("<accessor count=\""+str(collada_vetex_count)+"\" offset=\"0\" source=\"#" + collada_vertex_source_id + "\" stride=\"3\">\n")
+collada_file.write("<accessor count=\""+str(collada_position_count)+"\" offset=\"0\" source=\"#" + collada_position_source_name + "\" stride=\"3\">\n")
 collada_file.write("<param name=\"X\" type=\"float\" />\n")
 collada_file.write("<param name=\"Y\" type=\"float\" />\n")
 collada_file.write("<param name=\"Z\" type=\"float\" />\n")
@@ -785,11 +735,14 @@ collada_file.write("<float_array id=\"" + collada_normal_array_name + "\" count=
 
 #Normals go here
 for collada_normal in range(int(collada_normal_count)):
-    collada_file.write(get_obj_normal(collada_normal,collada_normal_count) + " ")
+    if asset_type == "complex":
+        collada_file.write(get_obj_normal(collada_normal,collada_normal_count) + " ")
+    elif asset_type == "simple":
+        collada_file.write(get_simple_obj_normal(collada_normal,collada_normal_count) + " ")
 
 collada_file.write("</float_array>\n")
 collada_file.write("<technique_common>\n")
-collada_file.write("<accessor count=\""+str(collada_normal_count)+"\" offset=\"0\" source=\"#" + collada_normal_source_id + "\" stride=\"3\">\n")
+collada_file.write("<accessor count=\""+str(collada_normal_count)+"\" offset=\"0\" source=\"#" + collada_normal_source_name + "\" stride=\"3\">\n")
 collada_file.write("<param name=\"X\" type=\"float\" />\n")
 collada_file.write("<param name=\"Y\" type=\"float\" />\n")
 collada_file.write("<param name=\"Z\" type=\"float\" />\n")
@@ -803,13 +756,37 @@ collada_file.write("</source>\n")
 # Write COLLADA Colors
 #########################
 
-#collada_color_array_name
-#collad_color_source_id
-#collad_color_source_name
-#collada_color_count
+collada_file.write("<source id=\"" + collada_color_source_id + "\" name=\"" + collada_color_source_name + "\">\n")
+collada_file.write("<float_array id=\"" + collada_color_array_name + "\" count=\""+str(collada_color_count*3)+"\"> ")
+
+#Normals go here
+for collada_color in range(int(collada_color_count)):
+    if asset_type == "complex":
+        collada_file.write(get_obj_color(collada_color,collada_color_count) + " ")
+    if asset_type == "simple":
+         collada_file.write(get_simple_obj_color(collada_color,collada_color_count) + " ")       
+collada_file.write("</float_array>\n")
+collada_file.write("<technique_common>\n")
+collada_file.write("<accessor count=\""+str(collada_color_count)+"\" offset=\"0\" source=\"#" + collada_color_source_name + "\" stride=\"3\">\n")
+collada_file.write("<param name=\"R\" type=\"float\" />\n")
+collada_file.write("<param name=\"G\" type=\"float\" />\n")
+collada_file.write("<param name=\"B\" type=\"float\" />\n")
+collada_file.write("</accessor>\n")
+collada_file.write("</technique_common>\n")
+collada_file.write("</source>\n")
 
 
 
+
+
+#######################################
+# Write COLLADA Vertices Position
+#######################################
+
+
+collada_file.write("<vertices id=\"" + collada_vertex_source_id + "\">\n")
+collada_file.write("<input semantic=\"POSITION\" source=\"#" + collada_position_source_id + "\" />\n")
+collada_file.write("</vertices>\n")
 
 
 
@@ -842,7 +819,7 @@ for face in range(int(index_count/3)):
     collada_file.write(get_obj_face(face) + " ")
     #Write Colors
     #TBD
-
+collada_file.write("</p>\n")
 collada_file.write("</polylist>\n")
 collada_file.write("</mesh>\n")
 collada_file.write("</geometry>\n")
@@ -855,51 +832,60 @@ collada_file.write("</library_geometries>\n")
 
 collada_file.write("<library_controllers>\n")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 collada_file.write("</library_controllers>\n")
+
+
+
+
+
+
+
+
+
+
+
+
+collada_visual_scene_id="Root"
+collada_visual_scene_name="Root"
+collada_visual_scene_url="Root"
+
+collada_visual_scene_node_id=str(asset_name)
+collada_visual_scene_node_name=str(asset_name)
+"+str(collada_library_material_name) + "
 
 #########################
 # COLLADA BINDING
 #########################
 
 collada_file.write("<library_visual_scenes>\n")
-#collada_file.write("<visual_scene id=\"Root\" name=\"Root\">\n")
-#collada_file.write("<node id=\"jam\"  name=\"jam\" type=\"NODE\">\n")
-#collada_file.write("<matrix sid=\"matrix\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
-#collada_file.write("<instance_geometry url=\"#meshId0\">\n")
-#collada_file.write("<bind_material>\n")
-#collada_file.write("<technique_common>\n")
-#collada_file.write("<instance_material symbol=\"defaultMaterial\" target=\"#m0mat\">\n")
-#collada_file.write("</instance_material>\n")
-#collada_file.write("</technique_common>\n")
-#collada_file.write("</bind_material>\n")
-#collada_file.write("</instance_geometry>\n")
-#collada_file.write("</node>\n")
-#collada_file.write("<node id=\"Node_000000000349DD80\"  name=\"Node_000000000349DD80\" type=\"NODE\">\n")
-#collada_file.write("<matrix sid=\"matrix\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
-#collada_file.write(" </node>\n")
-#collada_file.write("</visual_scene>\n")
+collada_file.write("<visual_scene id=\""+str(collada_visual_scene_id) + "\" name=\""+str(collada_visual_scene_name) + "\">\n")
+collada_file.write("<node id=\""+str(collada_visual_scene_id) + "\"  name=\"" + str(collada_visual_scene_id) + "\" type=\"NODE\">\n")
+
+
+collada_file.write("<matrix sid=\"matrix\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
+collada_file.write("<instance_geometry url=\"#"+ str(collada_gemotery_id) + "\">\n")
+collada_file.write("<bind_material>\n")
+collada_file.write("<technique_common>\n")
+collada_file.write("<instance_material symbol=\"defaultMaterial\" target=\"#" + str(collada_library_material_name) + "\">\n")
+collada_file.write("</instance_material>\n")
+collada_file.write("</technique_common>\n")
+collada_file.write("</bind_material>\n")
+collada_file.write("</instance_geometry>\n")
+collada_file.write("</node>\n")
+collada_file.write("<node id=\"Node_000000000349DD80\"  name=\"Node_000000000349DD80\" type=\"NODE\">\n")
+collada_file.write("<matrix sid=\"matrix\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
+collada_file.write("</node>\n")
+collada_file.write("</visual_scene>\n")
 collada_file.write("</library_visual_scenes>\n")
-
-
-#collada_file.write("<scene>\n")
-#collada_file.write("<instance_visual_scene url=\"#Root\" />\n")
-#collada_file.write("</scene>\n")
-
+collada_file.write("<scene>\n")
+collada_file.write("<instance_visual_scene url=\"#" + str(collada_visual_scene_url) + "\" />\n")
+collada_file.write("</scene>\n")
 collada_file.write("</COLLADA>\n")
+
+
+
+
+
 
 
 
