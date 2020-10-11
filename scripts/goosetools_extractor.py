@@ -124,31 +124,66 @@ def get_material_name(raw_material_data):
 
 
 
+global material_vertex_count_array
+material_vertex_count_array=""
 
+current_material_count=0
 def get_material_list(num_of_vertex, size_of_vertex_buffer):
     asset_type=get_asset_type(num_of_vertex, size_of_vertex_buffer)
-    temp_material_list=""
+    global material_vertex_count_array
+    material_vertex_count_array=""
     
+    global material_vertex_start_array
+    material_vertex_start_array="0 "
+
+    already_counted_vertex_array=""
+
+    temp_material_list=""
+    current_material=""
+    previous_material=""
+    current_material_count=1
     if asset_type == "simple":
         for vertex in range(num_of_vertex):
             
             current_material_buffer = get_simple_obj_color_hex(vertex, size_of_vertex_buffer)
             current_material=current_material_buffer.split()[0] + current_material_buffer.split()[1] + current_material_buffer.split()[2] + "ff"
-
-            if current_material not in temp_material_list:
+            
+            if previous_material.strip() != current_material.strip() and previous_material.strip() != "":
                 print("Processing Material: "+ Fore.YELLOW + "["+ str(current_material)+"]" +Style.RESET_ALL)
                 temp_material_list+=current_material + " "
+                material_vertex_count_array+=str(current_material_count) + " "
+                material_vertex_start_array+=str(vertex) + " "
+                current_material_count=0
+            elif previous_material == "":
+                print("Processing Material: "+ Fore.YELLOW + "["+ str(current_material)+"]" +Style.RESET_ALL)
+                temp_material_list+=current_material + " "
+            else:
+                
 
+                current_material_count+=1              
+            previous_material=current_material            
+        material_vertex_start_array+=str(num_of_vertex) + " "
+        material_vertex_count_array+=str(current_material_count) + " "
+
+                
+
+    
     elif asset_type == "complex":
         for vertex in range(num_of_vertex):
             
             current_material_buffer = get_obj_color_hex(vertex, size_of_vertex_buffer)
             current_material=current_material_buffer.split()[0] + current_material_buffer.split()[1] + current_material_buffer.split()[2] + "ff"
             
-            if current_material not in temp_material_list:
+            if previous_material.strip() != current_material.strip() and previous_material.strip() != "":
                 print("Processing Material: "+ Fore.YELLOW + "["+ str(current_material)+"]" +Style.RESET_ALL)
                 temp_material_list+=current_material + " "
-
+                material_vertex_count_array+=str(current_material_count) + " "
+                material_vertex_start_array+=str(vertex) + " "
+                current_material_count=0
+            else:
+                current_material_count+=1              
+            previous_material=current_material  
+    
     else:
         print("ERROR - Could not get material list: "+ Fore.RED + "[FAIL]" +Style.RESET_ALL)
 
@@ -158,16 +193,23 @@ def get_material_list(num_of_vertex, size_of_vertex_buffer):
 
 def generate_material_name(index):
     if len(str(index)) == 1:
-        return "ugg_material.00"+ str(material_count_index)
+        return "ugg_material.00"+ str(index)
     elif len(str(index)) == 2:
-        return "ugg_material.0"+ str(material_count_index) 
+        return "ugg_material.0"+ str(index) 
     elif len(str(index)) == 3:
-        return "ugg_material."+ str(material_count_index) 
+        return "ugg_material."+ str(index) 
     else:
         print("ERROR - Could not generate material name: "+ Fore.RED + "[FAIL]" +Style.RESET_ALL)            
         return "defaultMaterial"
 
 
+def get_material_vertex_count(index):
+    if len(material_vertex_count_array) > index:
+        return material_vertex_count_array.split()[index]
+    else:
+        print("ERROR - MATERIAL INDEX OUT OF RANGE")
+        print("ARRAY: " + str(material_vertex_count_array))
+        return str(0)
 
 #######################
 # COMPLEX ASSETS
@@ -479,7 +521,10 @@ asset_type=get_asset_type(vertex_count,vertex_buffer_size)
 
 material_list=get_material_list(vertex_count,vertex_buffer_size)
 
-
+if len(material_list.split()) == len(material_vertex_count_array.split()):
+    print("Vertex Colors Optimization: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
+else:
+    print("WARNING: Assert Vertex Colors Not Optimized"+ Fore.YELLOW + "[WARNING]" +Style.RESET_ALL)    
 
 
 
@@ -579,7 +624,7 @@ collada_file.write("</asset>\n")
 
 collada_file.write("<library_effects>\n")
 
-for material_num in range(len(material_list.split())):
+for material_num in range(len(material_list.split())+1):
     
     collada_material_effect_name=generate_material_name(material_num) + "-effect"
     
@@ -609,7 +654,7 @@ collada_file.write("</library_effects>\n")
 
 collada_file.write("<library_materials>\n")
 
-for material_num in range(len(material_list.split())):
+for material_num in range(len(material_list.split())+1):
     
     collada_library_material_id=generate_material_name(material_num) + "-material"   
     collada_library_material_name=generate_material_name(material_num)
@@ -747,36 +792,75 @@ collada_file.write("</vertices>\n")
 # Write COLLADA TRIANGLES (.OBJ Faces)
 #######################################
 
-
+material_index=0
+new_material_flag=0
 for material_num in range(len(material_list.split())):
+    print("DEBUG - MATERIAL NUM: " + str(material_num))
+    new_material_flag=0
+    collada_library_material_id=generate_material_name(material_num) + "-material"
+    material_vertex_start=int(material_vertex_start_array.split()[material_num])
+    material_vertex_end=int(material_vertex_count_array.split()[material_num])+material_vertex_start-1
+    
+    current_face_count=0
+    for face in range(int(index_count/3)):
+        temp_face=get_obj_face(face)
+        v1=temp_face.split()[0]
+        v2=temp_face.split()[1]
+        v3=temp_face.split()[2]
+
+        if (int(v1) <= int(material_vertex_end)) and (int(v2) <= int(material_vertex_end)) and (int(v3) <= int(material_vertex_end)):
+            if ((int(v1) >= int(material_vertex_start)) and (int(v2) >= int(material_vertex_start)) and (int(v3) >= int(material_vertex_start))):
+                current_face_count+=1
+
+    collada_triangle_vertex_count=current_face_count
+
+    collada_file.write("<triangles material=\"" + str(collada_library_material_id) + "\" count=\""+str(collada_triangle_vertex_count) + "\">\n")
+    collada_file.write("<input semantic=\"VERTEX\" source=\"#" + collada_vertex_source_id + "\" offset=\"0\"/>\n")
+    collada_file.write("<input semantic=\"NORMAL\" source=\"#" + collada_normal_source_id + "\" offset=\"1\"/>\n")
+    collada_file.write("<input semantic=\"COLOR\" source=\"#" + collada_color_source_id + "\" offset=\"2\" set=\"0\"/>\n")
+
+    #Write the index buffer
+    collada_file.write("<p>")
 
 
 
-collada_file.write("<polylist count=\""+str(index_count)+"\" material=\"defaultMaterial\">\n")
-collada_file.write("<input offset=\"0\" semantic=\"VERTEX\" source=\"#" + collada_vertex_source_id + "\" />\n")
-collada_file.write("<input offset=\"0\" semantic=\"NORMAL\" source=\"#" + collada_normal_source_id + "\" />\n")
-#COLOR PLACEHOLDER 
-collada_file.write("<input offset=\"0\" semantic=\"COLOR\" source=\"#" + collada_color_source_id + "\" />\n")
-#UV PLACEHOLDER 
-#collada_file.write("<input offset=\"0\" semantic=\"TEXCOORD\" source=\"#" + collada_uv_source_id + "\" />\n")
+
+    for face in range(int(index_count/3)):
+        temp_face=get_obj_face(face)
+        v1=temp_face.split()[0]
+        v2=temp_face.split()[1]
+        v3=temp_face.split()[2]
+        
+        if ((int(v1) > int(material_vertex_end)) or (int(v2) > int(material_vertex_end)) or (int(v3) > int(material_vertex_end))) and new_material_flag != 1:
+            #print("Writing Material: "+ Fore.YELLOW + "["+ str(current_material)+"]" +Style.RESET_ALL)
+            material_index+=1
+            new_material_flag=1
+        elif ((int(v1) >= int(material_vertex_start)) and (int(v2) >= int(material_vertex_start)) and (int(v3) >= int(material_vertex_start))) and new_material_flag != 1:
+            #Write Face
+            collada_file.write(v1+" "+v1+" "+v1+" "+v2+" "+v2+" "+v2+" "+v3+" "+v3+" "+v3+" ")
 
 
-#Write number of vertex for each face. Our data is 3 all the time because triangles
-collada_file.write("<vcount>")
-for vcount in range(int(index_count/3)):
-    collada_file.write("3 ")
-collada_file.write("</vcount>\n")
 
 
-#Write the index buffer
-collada_file.write("<p>")
-for face in range(int(index_count/3)):
-    #Write Vertex
-    collada_file.write(get_obj_face(face) + " ")
-    #Write Colors
-    #TBD
-collada_file.write("</p>\n")
-collada_file.write("</polylist>\n")
+
+        #else:
+            #print("DEBUG - V1: " + str(v1) + " >= " + str(material_vertex_start) + " or > " + str(material_vertex_end) )       	
+            #print("DEBUG - V2: " + str(v2)+ " >= " + str(material_vertex_start) + " or > " + str(material_vertex_end) )   
+            #print("DEBUG - V3: " + str(v3)+ " >= " + str(material_vertex_start) + " or > " + str(material_vertex_end) )          		       
+    collada_file.write("</p>\n")
+    collada_file.write("</triangles>\n")
+
+
+
+
+
+
+
+
+
+
+
+
 collada_file.write("</mesh>\n")
 collada_file.write("</geometry>\n")
 collada_file.write("</library_geometries>\n")
@@ -801,9 +885,9 @@ collada_file.write("</library_controllers>\n")
 
 
 
-collada_visual_scene_id="Root"
-collada_visual_scene_name="Root"
-collada_visual_scene_url="Root"
+collada_visual_scene_id="Scene"
+collada_visual_scene_name="Scene"
+collada_visual_scene_url="Scene"
 
 collada_visual_scene_node_id=str(asset_name)
 collada_visual_scene_node_name=str(asset_name)
@@ -812,36 +896,40 @@ collada_visual_scene_node_name=str(asset_name)
 #########################
 # COLLADA BINDING
 #########################
-
 collada_file.write("<library_visual_scenes>\n")
-collada_file.write("<visual_scene id=\""+str(collada_visual_scene_id) + "\" name=\""+str(collada_visual_scene_name) + "\">\n")
-collada_file.write("<node id=\""+str(collada_visual_scene_node_id) + "\"  name=\"" + str(collada_visual_scene_node_name) + "\" type=\"NODE\">\n")
-
-
-collada_file.write("<matrix sid=\"matrix\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
-collada_file.write("<instance_geometry url=\"#"+ str(collada_gemotery_id) + "\">\n")
+collada_file.write("<visual_scene id=\"" + str(collada_visual_scene_id) + "\" name=\"" + str(collada_visual_scene_name) +"\">\n")
+collada_file.write("<node id=\"Node_000000000349DD80\" name=\"Node_000000000349DD80\" type=\"NODE\">\n")
+collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
+collada_file.write("</node>\n")
+collada_file.write("<node id=\"" + str(collada_visual_scene_node_id) + "\" name=\"" + str(collada_visual_scene_node_name) + "\" type=\"NODE\">\n")
+collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
+collada_file.write("<instance_geometry url=\"#"+str(collada_gemotery_id)+"\" name=\""+str(collada_name)+"\">\n")
 collada_file.write("<bind_material>\n")
 collada_file.write("<technique_common>\n")
-collada_file.write("<instance_material symbol=\"defaultMaterial\" target=\"#" + str(collada_library_material_name) + "\">\n")
-collada_file.write("</instance_material>\n")
+
+
+
+#########################
+# COLLADA BIND MATERIALS
+#########################
+
+for material_num in range(len(material_list.split())):
+    collada_library_material_id=generate_material_name(material_num) + "-material" 
+    collada_file.write("<instance_material symbol=\"" + str(collada_library_material_id) + "\" target=\"#" + str(collada_library_material_id) + "\"/>\n")
+
+
+
+
 collada_file.write("</technique_common>\n")
 collada_file.write("</bind_material>\n")
 collada_file.write("</instance_geometry>\n")
 collada_file.write("</node>\n")
-collada_file.write("<node id=\"Node_000000000349DD80\"  name=\"Node_000000000349DD80\" type=\"NODE\">\n")
-collada_file.write("<matrix sid=\"matrix\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
-collada_file.write("</node>\n")
 collada_file.write("</visual_scene>\n")
 collada_file.write("</library_visual_scenes>\n")
 collada_file.write("<scene>\n")
-collada_file.write("<instance_visual_scene url=\"#" + str(collada_visual_scene_url) + "\" />\n")
+collada_file.write("<instance_visual_scene url=\"#"+str(collada_visual_scene_url)+"\"/>\n")
 collada_file.write("</scene>\n")
 collada_file.write("</COLLADA>\n")
-
-
-
-
-
 
 
 
