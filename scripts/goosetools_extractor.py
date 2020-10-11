@@ -145,7 +145,7 @@ def get_material_list(num_of_vertex, size_of_vertex_buffer):
     if asset_type == "simple":
         for vertex in range(num_of_vertex):
             
-            current_material_buffer = get_simple_obj_color_hex(vertex, size_of_vertex_buffer)
+            current_material_buffer = get_simple_obj_color_hex(vertex, num_of_vertex)
             current_material=current_material_buffer.split()[0] + current_material_buffer.split()[1] + current_material_buffer.split()[2] + "ff"
             
             if previous_material.strip() != current_material.strip() and previous_material.strip() != "":
@@ -171,7 +171,7 @@ def get_material_list(num_of_vertex, size_of_vertex_buffer):
     elif asset_type == "complex":
         for vertex in range(num_of_vertex):
             
-            current_material_buffer = get_obj_color_hex(vertex, size_of_vertex_buffer)
+            current_material_buffer = get_obj_color_hex(vertex, num_of_vertex)
             current_material=current_material_buffer.split()[0] + current_material_buffer.split()[1] + current_material_buffer.split()[2] + "ff"
             
             if previous_material.strip() != current_material.strip() and previous_material.strip() != "":
@@ -222,18 +222,18 @@ def get_material_vertex_count(index):
 
 def get_complex_vertex_buffer_block_size():
     return 40
-def get_complex_vertex_buffer_size(vertex_buffer_size):
-    return vertex_buffer_size*get_complex_vertex_buffer_block_size()
+def get_complex_vertex_buffer_size(vertex_count):
+    return vertex_count*get_complex_vertex_buffer_block_size()
 
 def get_complex_color_buffer_block_size():
     return 12
-def get_complex_color_buffer_size(vertex_buffer_size):
-    return vertex_buffer_size*get_complex_color_buffer_block_size()
+def get_complex_color_buffer_size(vertex_count):
+    return vertex_count*get_complex_color_buffer_block_size()
 
 def get_complex_bone_buffer_block_size():
     return 32
-def get_complex_bone_buffer_size(vertex_buffer_size):
-    return vertex_buffer_size*get_complex_bone_buffer_block_size()
+def get_complex_bone_buffer_size(vertex_count):
+    return vertex_count*get_complex_bone_buffer_block_size()
   
 
 # returns #num1 #num2 #num3
@@ -306,7 +306,7 @@ def get_obj_color(vertex_number,vertex_buffer_size):
 
 def get_obj_color_hex(vertex_number,vertex_buffer_size):
     v=get_complex_vertex_buffer_size(vertex_buffer_size)*2+vertex_number*get_complex_color_buffer_block_size()*2
-    
+    #print("DEBUG - V: " + str(v))
     byte_red=vertex_buffer[v+16]+vertex_buffer[v+17]
     byte_green=vertex_buffer[v+18]+vertex_buffer[v+19]
     byte_blue=vertex_buffer[v+20]+vertex_buffer[v+21]
@@ -514,6 +514,10 @@ for line in YAML_LINE:
 
 
 
+print("Asset Name: "+Fore.GREEN + str(asset_name)+Style.RESET_ALL)
+print("Indexs: "+Fore.GREEN +str(index_count)+Style.RESET_ALL)
+print("Vertexs: "+Fore.GREEN +str(vertex_count)+Style.RESET_ALL)
+print("Vertex Buffer Size: "+ Fore.GREEN +str(vertex_buffer_size)+Style.RESET_ALL)
 
 
 
@@ -757,7 +761,7 @@ collada_file.write("</source>\n")
 
 collada_color_array_name=str(asset_name)+"-mesh-colors-array"
 collada_color_source_id=str(asset_name)+"-mesh-colors"
-collada_color_source_name=str(asset_name)+"-mesh-colors"
+collada_color_source_name=str(asset_name)+"-colors"
 collada_color_count=vertex_count
 
 collada_file.write("<source id=\"" + collada_color_source_id + "\" name=\"" + collada_color_source_name + "\">\n")
@@ -774,7 +778,7 @@ collada_file.write("</float_array>\n")
 
 
 collada_file.write("<technique_common>\n")
-collada_file.write("<accessor source=\"#" + str(collada_color_array_name) + "\" count=\"" + str(collada_color_count*4) + "\" stride=\"4\">\n")
+collada_file.write("<accessor source=\"#" + str(collada_color_array_name) + "\" count=\"" + str(collada_color_count) + "\" stride=\"4\">\n")
 collada_file.write("<param name=\"R\" type=\"float\" />\n")
 collada_file.write("<param name=\"G\" type=\"float\" />\n")
 collada_file.write("<param name=\"B\" type=\"float\" />\n")
