@@ -180,10 +180,15 @@ def get_material_list(num_of_vertex, size_of_vertex_buffer):
                 material_vertex_count_array+=str(current_material_count) + " "
                 material_vertex_start_array+=str(vertex) + " "
                 current_material_count=0
+            elif previous_material == "":
+                print("Processing Material: "+ Fore.YELLOW + "["+ str(current_material)+"]" +Style.RESET_ALL)
+                temp_material_list+=current_material + " "
+
             else:
                 current_material_count+=1              
             previous_material=current_material  
-    
+        material_vertex_start_array+=str(num_of_vertex) + " "
+        material_vertex_count_array+=str(current_material_count) + " "
     else:
         print("ERROR - Could not get material list: "+ Fore.RED + "[FAIL]" +Style.RESET_ALL)
 
