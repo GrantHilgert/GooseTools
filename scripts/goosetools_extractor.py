@@ -408,16 +408,53 @@ def get_obj_vertex_weight(weight_position,vertex_number,num_of_vertex,asset_type
 
         vertex_weight=round(float(str(struct.unpack('f', bytes.fromhex(bone_weight_string))).strip('(),')),7)
 
-        return str(bone_num_int) + " " +str(vertex_weight)
+        if bone_num_int == 0 and vertex_weight == 0:
+            return "0 0.0"
+
+        return str(bone_num_int+1) + " " +str(vertex_weight)
         #print("VERTEX: "+ Fore.CYAN +str(vertex_number)+Style.RESET_ALL + " BONE: "+ Fore.YELLOW + str(bone_num_int)+Style.RESET_ALL + " WEIGHT: " + Fore.GREEN+str(vertex_weight)+Style.RESET_ALL)
-
-
-
-
 
     else:
         print(Fore.RED + "ERROR: Asset type: " + str(asset_type) + " has no vertex weight." +Style.RESET_ALL)   		
         return ""
+
+def get_obj_vertex_weight_count(vertex_number,num_of_vertex,asset_type):
+    if ((asset_type == "npc") or (asset_type == "goose")):
+        for weight_position in range(4):
+            bone_weight_string=""
+            bone_num_string=""
+            if asset_type == "npc":
+                v=(get_complex_vertex_buffer_size(num_of_vertex)*2+get_complex_color_buffer_size(num_of_vertex)*2)+get_complex_bone_buffer_block_size()*vertex_number*2+8*weight_position   
+            elif asset_type == "goose":
+                unknown_goose_data=24
+                v=(get_complex_vertex_buffer_size(num_of_vertex)*2+get_complex_color_buffer_size(num_of_vertex)*2+unknown_goose_data)+get_complex_bone_buffer_block_size()*vertex_number*2+8*weight_position
+
+            for bone_char_index in range(8):
+                bone_weight_string+=vertex_buffer[v+bone_char_index]
+
+            for bone_num_char_index in range(8):
+                bone_num_string+=vertex_buffer[v+bone_num_char_index+32]
+
+            bone_num_byte_1=bone_num_string[0]+bone_num_string[1]
+            bone_num_byte_2=bone_num_string[2]+bone_num_string[3]
+            bone_num_byte_3=bone_num_string[4]+bone_num_string[5] 
+            bone_num_byte_4=bone_num_string[6]+bone_num_string[7]
+
+            bone_num_hex=bone_num_byte_4+bone_num_byte_3+bone_num_byte_2+bone_num_byte_1
+            bone_num_int=int(bone_num_hex,16)
+
+            #print("DEBUG = BONE WEIGHT STRING: " + str(bone_weight_string))
+            vertex_weight=round(float(str(struct.unpack('f', bytes.fromhex(bone_weight_string))).strip('(),')),7)
+
+            if vertex_weight == 0 and bone_num_int == 0:
+                return weight_position    
+        return 4
+    else:
+        print(Fore.RED + "ERROR: Asset type: " + str(asset_type) + " has no vertex weight [Weight Count]." +Style.RESET_ALL)           
+        return ""
+
+
+
 
 def get_bone_hash(bone_number,bone_count):
     temp_string=""
@@ -1190,11 +1227,18 @@ if asset_type == "goose" or asset_type == "npc":
     collada_skin_weight_array_name="Body_Armature_"+str(asset_name)+"-skin-weights-array"
     collade_skin_weight_count=0
 
+    for vertex_index in range(vertex_count):
+        collade_skin_weight_count+=get_obj_vertex_weight_count(vertex_index,vertex_count,asset_type)
+
     collada_file.write("<source id=\"" + str(collada_skin_weight_source_id) + "\">\n")
     collada_file.write("<float_array id=\"" + str(collada_skin_weight_array_name) + "\" count=\"" + str(int(collade_skin_weight_count)) + "\">\n")
-
+    
     #Write Weights Here
-
+    for vertex_index in range(vertex_count):
+        for skin_weight_index in range(get_obj_vertex_weight_count(vertex_index,vertex_count,asset_type)):
+            collada_file.write(get_obj_vertex_weight(skin_weight_index,vertex_index,vertex_count,asset_type).split()[1])
+       
+    collada_file.write("</float_array>\n")
     collada_file.write("<technique_common>\n")
     collada_file.write("<accessor source=\"#" + str(collada_skin_weight_array_name) + "\" count=\"" + str(int(collade_skin_weight_count)) + "\" stride=\"1\">\n")
     collada_file.write("<param name=\"WEIGHT\" type=\"float\"/>\n")
@@ -1219,7 +1263,8 @@ if asset_type == "goose" or asset_type == "npc":
     collada_file.write("<vcount>\n")
 
           #VCOUNT - NUMBER OF WEIGHTS PER VERTEX - BETWEEN 1 and 4
-
+    for vertex_index in range(vertex_count):
+        collada_file.write(str(get_obj_vertex_weight_count(vertex_index,vertex_count,asset_type)) +" ")
 
 
 
@@ -1227,11 +1272,18 @@ if asset_type == "goose" or asset_type == "npc":
     collada_file.write("<v>\n")
 
 
-          #VERTEX POSTION
 
-
-
-
+    #VERTEX POSTION
+    global_vertex_positon_count=0
+    for vertex_index in range(vertex_count):
+        
+        temp_vertex_weight_count=get_obj_vertex_weight_count(vertex_index,vertex_count,asset_type)
+        #collada_file.write(str(temp_vertex_weight_count) +" ")
+        for skin_weight_index in range(temp_vertex_weight_count):
+            #print("DEBUG- TEMP VERTEX WEIGHT: " + str(temp_vertex_weight_count) + " : "  + str(skin_weight_index))         
+            collada_file.write(str(get_obj_vertex_weight(skin_weight_index,vertex_index,vertex_count,asset_type)).split()[0] + " ")
+            collada_file.write(str(global_vertex_positon_count+skin_weight_index) + " ")
+        global_vertex_positon_count+=int(temp_vertex_weight_count)
 
     collada_file.write("</vertex_weights>\n")
     collada_file.write("</skin>\n")
@@ -1359,11 +1411,11 @@ print("BONE ROOT: " + get_obj_bone_root(vertex_count))
 
 
 for index in range(vertex_count):
-    print("VERTEX: " +Fore.CYAN + str(index) + Style.RESET_ALL)
-    get_obj_vertex_weight(0,index,vertex_count,asset_type)
-    get_obj_vertex_weight(1,index,vertex_count,asset_type)
-    get_obj_vertex_weight(2,index,vertex_count,asset_type)
-    get_obj_vertex_weight(3,index,vertex_count,asset_type)
+    print("VERTEX: " +Fore.CYAN + str(index) + Style.RESET_ALL +" "+Fore.CYAN + str(get_obj_vertex_weight_count(index,vertex_count,asset_type)) + Style.RESET_ALL)
+    print("BONE 1: " + str(get_obj_vertex_weight(0,index,vertex_count,asset_type)))
+    print("BONE 2: " + str(get_obj_vertex_weight(1,index,vertex_count,asset_type)))
+    print("BONE 3: " + str(get_obj_vertex_weight(2,index,vertex_count,asset_type)))
+    #print("BONE 4: " + str(get_obj_vertex_weight(3,index,vertex_count,asset_type)))
     #print("BONE INDEX 0 :" +Fore.YELLOW + str(get_obj_vertex_weight(0,index,vertex_count,asset_type)) + Style.RESET_ALL)
     #print("BONE INDEX 1 :" +Fore.YELLOW + str(get_obj_vertex_weight(1,index,vertex_count,asset_type)) + Style.RESET_ALL)
     #print("BONE INDEX 2 :" +Fore.YELLOW + str(get_obj_vertex_weight(2,index,vertex_count,asset_type)) + Style.RESET_ALL)
