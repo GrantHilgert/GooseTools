@@ -58,16 +58,9 @@ today = date.today()
 # long 10: Unknown - Why Always -1?
 
 #Block 2
-# long 1: X
-# long 2: Y
-# long 3: Z
-# long 4: Normal X
-# long 5: Normal Y
-# long 6: Normal Z
-# long 7: Unknown - Why Always 1?
-# long 8: Unknown
-# long 9: Unknown
-# long 10: Unknown - Why Always -1?
+# long 1: UV
+# long 2: UV
+# long 3: RED + GREEN + BLUE + "FF"
 
 #Block 3
 # long 1: Unknown
@@ -88,30 +81,38 @@ today = date.today()
 
 
 #Returns whether the asset is simple(i.g. Pumpkin) or has bone(i.g. Goose)
-def get_asset_type(num_of_vertex, size_of_vertex_buffer):
+def get_asset_type(num_of_vertex, size_of_vertex_buffer,bone_count):
+ 
+
+    # Complex Structure (Type-B)
     
+
+    complex_vertex_buffer_size=40*num_of_vertex
+    complex_color_buffer_size=12*num_of_vertex
+    complex_bone_buffer_size=32*num_of_vertex
+    complex_bone_lable_size=12
+    complex_buffer_combined_size=complex_vertex_buffer_size+complex_color_buffer_size+complex_bone_buffer_size 
+
+    if (complex_buffer_combined_size == size_of_vertex_buffer) and bone_count > 0: 
+
+        print("Model Structure: "+ Fore.YELLOW + "[NPC]" +Style.RESET_ALL)        
+        return "npc"
+    
+
+    elif (complex_buffer_combined_size + complex_bone_lable_size == size_of_vertex_buffer) and (bone_count > 0): 
+
+        print("Model Structure: "+ Fore.YELLOW + "[GOOSE]" +Style.RESET_ALL)        
+        return "goose"
+
     # Simple Structure (Type-A)
-    if (size_of_vertex_buffer/num_of_vertex).is_integer():
+    elif (size_of_vertex_buffer/num_of_vertex).is_integer():
         print("Model Structure: "+ Fore.YELLOW + "[SIMPLE]" +Style.RESET_ALL)
         return "simple"
 
-    # Complex Structure (Type-B)
-    else:
-
-        complex_vertex_buffer_size=40*num_of_vertex
-        complex_color_buffer_size=12*num_of_vertex
-        complex_bone_buffer_size=32*num_of_vertex
-        complex_bone_lable_size=12
-
-        complex_buffer_combined_size=complex_vertex_buffer_size+complex_color_buffer_size+complex_bone_buffer_size+complex_bone_lable_size
-        if size_of_vertex_buffer == complex_buffer_combined_size:
-            print("Model Structure: "+ Fore.YELLOW + "[COMPLEX]" +Style.RESET_ALL)        
-            return "complex"
-        
         #This buffer is something else and we cant decode it, throw an error.
-        else:
-            print("Model Structure: "+ Fore.RED + "[UNKNOWN]" +Style.RESET_ALL) 
-            return "fail"
+    else:
+        print("Model Structure: "+ Fore.RED + "[UNKNOWN]" +Style.RESET_ALL) 
+        return "fail"
 
 
 
@@ -127,9 +128,10 @@ def get_material_name(raw_material_data):
 global material_vertex_count_array
 material_vertex_count_array=""
 
+
 current_material_count=0
-def get_material_list(num_of_vertex, size_of_vertex_buffer):
-    asset_type=get_asset_type(num_of_vertex, size_of_vertex_buffer)
+def get_material_list(num_of_vertex, size_of_vertex_buffer,bone_count):
+    asset_type=get_asset_type(num_of_vertex, size_of_vertex_buffer,bone_count)
     global material_vertex_count_array
     material_vertex_count_array=""
     
@@ -141,7 +143,7 @@ def get_material_list(num_of_vertex, size_of_vertex_buffer):
     temp_material_list=""
     current_material=""
     previous_material=""
-    current_material_count=1
+    current_material_count=0
     if asset_type == "simple":
         for vertex in range(num_of_vertex):
             
@@ -150,6 +152,7 @@ def get_material_list(num_of_vertex, size_of_vertex_buffer):
             
             if previous_material.strip() != current_material.strip() and previous_material.strip() != "":
                 print("Processing Material: "+ Fore.YELLOW + "["+ str(current_material)+"]" +Style.RESET_ALL)
+                #print("DEBUG - VERTEX: "+str(vertex))
                 temp_material_list+=current_material + " "
                 material_vertex_count_array+=str(current_material_count) + " "
                 material_vertex_start_array+=str(vertex) + " "
@@ -168,27 +171,57 @@ def get_material_list(num_of_vertex, size_of_vertex_buffer):
                 
 
     
-    elif asset_type == "complex":
+    elif (asset_type == "goose"):
         for vertex in range(num_of_vertex):
             
             current_material_buffer = get_obj_color_hex(vertex, num_of_vertex)
             current_material=current_material_buffer.split()[0] + current_material_buffer.split()[1] + current_material_buffer.split()[2] + "ff"
-            
+            #print("VERTEX: " + str(vertex) + " COLOR: " +str(current_material))
             if previous_material.strip() != current_material.strip() and previous_material.strip() != "":
                 print("Processing Material: "+ Fore.YELLOW + "["+ str(current_material)+"]" +Style.RESET_ALL)
+                #print("DEBUG - VERTEX: "+str(vertex))
                 temp_material_list+=current_material + " "
                 material_vertex_count_array+=str(current_material_count) + " "
                 material_vertex_start_array+=str(vertex) + " "
-                current_material_count=0
+                current_material_count=1
             elif previous_material == "":
-                print("Processing Material: "+ Fore.YELLOW + "["+ str(current_material)+"]" +Style.RESET_ALL)
+                print("Processing Initial Material: "+ Fore.YELLOW + "["+ str(current_material)+"]" +Style.RESET_ALL)
                 temp_material_list+=current_material + " "
-
+                previous_material=current_material
+                current_material_count=1
             else:
                 current_material_count+=1              
             previous_material=current_material  
         material_vertex_start_array+=str(num_of_vertex) + " "
         material_vertex_count_array+=str(current_material_count) + " "
+
+    elif (asset_type == "npc"):
+        for vertex in range(num_of_vertex):
+            
+            current_material_buffer = get_obj_npc_color_hex(vertex, num_of_vertex)
+            current_material=current_material_buffer.split()[0] + current_material_buffer.split()[1] + current_material_buffer.split()[2] + "ff"
+            #print("VERTEX: " + str(vertex) + " COLOR: " +str(current_material))
+            if previous_material.strip() != current_material.strip() and previous_material.strip() != "":
+                print("Processing Material: "+ Fore.YELLOW + "["+ str(current_material)+"]" +Style.RESET_ALL)
+                #print("DEBUG - VERTEX: "+str(vertex))
+                temp_material_list+=current_material + " "
+                material_vertex_count_array+=str(current_material_count) + " "
+                material_vertex_start_array+=str(vertex) + " "
+                current_material_count=1
+            elif previous_material == "":
+                print("Processing Initial Material: "+ Fore.YELLOW + "["+ str(current_material)+"]" +Style.RESET_ALL)
+                temp_material_list+=current_material + " "
+                previous_material=current_material
+                current_material_count=1
+            else:
+                current_material_count+=1              
+            previous_material=current_material  
+        material_vertex_start_array+=str(num_of_vertex) + " "
+        material_vertex_count_array+=str(current_material_count) + " "
+
+
+
+
     else:
         print("ERROR - Could not get material list: "+ Fore.RED + "[FAIL]" +Style.RESET_ALL)
 
@@ -292,8 +325,11 @@ def get_obj_color(vertex_number,vertex_buffer_size):
     byte_red=vertex_buffer[v+16]+vertex_buffer[v+17]
     byte_green=vertex_buffer[v+18]+vertex_buffer[v+19]
     byte_blue=vertex_buffer[v+20]+vertex_buffer[v+21]
+
+
     #error check
     color_terminator=vertex_buffer[v+22]+vertex_buffer[v+23]
+
     if color_terminator != "ff":
         print(Fore.RED + "Data Error: Vertex: " + str(v) + "===>"+ str(vertex_number) + ": " + str(color_terminator) + " != \"ff\" color buffer Corrupt" +Style.RESET_ALL)
 
@@ -304,6 +340,8 @@ def get_obj_color(vertex_number,vertex_buffer_size):
 
     return str(normalized_red) + " " + str(normalized_green) + " " + str(normalized_blue)
 
+
+
 def get_obj_color_hex(vertex_number,vertex_buffer_size):
     v=get_complex_vertex_buffer_size(vertex_buffer_size)*2+vertex_number*get_complex_color_buffer_block_size()*2
     #print("DEBUG - V: " + str(v))
@@ -311,11 +349,168 @@ def get_obj_color_hex(vertex_number,vertex_buffer_size):
     byte_green=vertex_buffer[v+18]+vertex_buffer[v+19]
     byte_blue=vertex_buffer[v+20]+vertex_buffer[v+21]
     #error check
+
+
     color_terminator=vertex_buffer[v+22]+vertex_buffer[v+23]
+
     if color_terminator != "ff":
         print(Fore.RED + "Data Error: Vertex: " + str(v) + "===>"+ str(vertex_number) + ": " + str(color_terminator) + " != \"ff\" color buffer Corrupt" +Style.RESET_ALL)
 
     return str(byte_red) + " " + str(byte_green) + " " + str(byte_blue)
+
+
+
+
+
+def get_obj_bone_root(vertex_buffer_size):
+    v=get_complex_vertex_buffer_size(vertex_buffer_size)*2+get_complex_color_buffer_size(vertex_buffer_size)*2
+    temp_string=""
+    for index in range(24):
+        temp_string+=vertex_buffer[v+index]
+    return str(temp_string)
+
+def get_obj_bone_buffer(vertex_number,vertex_buffer_size):
+    v=(get_complex_vertex_buffer_size(vertex_buffer_size)*2+get_complex_color_buffer_size(vertex_buffer_size)*2+vertex_number*get_complex_bone_buffer_block_size()*2)+24
+    temp_string=""
+    for index in range(get_complex_bone_buffer_block_size()*2):
+        temp_string+=vertex_buffer[v+index]
+    return str(temp_string)
+
+
+
+
+
+def get_obj_vertex_weight(weight_position,vertex_number,num_of_vertex,asset_type):
+    bone_weight_string=""
+    bone_num_string=""
+    if ((asset_type == "npc") or (asset_type == "goose")) and weight_position < 4:
+
+        if asset_type == "npc":
+            v=(get_complex_vertex_buffer_size(num_of_vertex)*2+get_complex_color_buffer_size(num_of_vertex)*2)+get_complex_bone_buffer_block_size()*vertex_number*2+8*weight_position  	
+        elif asset_type == "goose":
+            unknown_goose_data=24
+            v=(get_complex_vertex_buffer_size(num_of_vertex)*2+get_complex_color_buffer_size(num_of_vertex)*2+unknown_goose_data)+get_complex_bone_buffer_block_size()*vertex_number*2+8*weight_position
+
+        for bone_char_index in range(8):
+            bone_weight_string+=vertex_buffer[v+bone_char_index]
+
+        for bone_num_char_index in range(8):
+            bone_num_string+=vertex_buffer[v+bone_num_char_index+32]
+
+        bone_num_byte_1=bone_num_string[0]+bone_num_string[1]
+        bone_num_byte_2=bone_num_string[2]+bone_num_string[3]
+        bone_num_byte_3=bone_num_string[4]+bone_num_string[5] 
+        bone_num_byte_4=bone_num_string[6]+bone_num_string[7]
+
+        bone_num_hex=bone_num_byte_4+bone_num_byte_3+bone_num_byte_2+bone_num_byte_1
+        bone_num_int=int(bone_num_hex,16)
+
+
+        vertex_weight=round(float(str(struct.unpack('f', bytes.fromhex(bone_weight_string))).strip('(),')),7)
+
+        return str(bone_num_int) + " " +str(vertex_weight)
+        #print("VERTEX: "+ Fore.CYAN +str(vertex_number)+Style.RESET_ALL + " BONE: "+ Fore.YELLOW + str(bone_num_int)+Style.RESET_ALL + " WEIGHT: " + Fore.GREEN+str(vertex_weight)+Style.RESET_ALL)
+
+
+
+
+
+    else:
+        print(Fore.RED + "ERROR: Asset type: " + str(asset_type) + " has no vertex weight." +Style.RESET_ALL)   		
+        return ""
+
+def get_bone_hash(bone_number,bone_count):
+    temp_string=""
+    temp_index=bone_number*int(len(bone_name_hash)/bone_count)
+    for bone_hash_string_index in range(int(len(bone_name_hash)/bone_count)):
+        temp_string+=bone_name_hash[temp_index+bone_hash_string_index]
+    
+    return str(temp_string)
+
+
+def get_bone_name_buffer(bone_count):
+    temp_bone_name_buffer="Body_Armature_Bone "
+    for bone_index in range(bone_count):
+        temp_bone_name_buffer+="Body_Armature_Bone_"+str("{0:0=3d}".format(bone_index)) + " "
+    return temp_bone_name_buffer
+
+
+def get_bone_name(bone_number,bone_count):
+    if bone_number == 1:
+        temp_bone_name="Body_Armature_Bone "
+    elif bone_number <= bone_count:
+        temp_bone_name+="Body_Armature_Bone_"+str("{0:0=2d}".format(bone_number)) + " "
+    return temp_bone_name
+
+
+
+#######################
+# NPC ASSETS
+#######################
+
+
+def get_obj_npc_color_hex(vertex_number,vertex_buffer_size):
+    v=get_complex_vertex_buffer_size(vertex_buffer_size)*2+vertex_number*get_complex_color_buffer_block_size()*2
+    #print("DEBUG - V: " + str(v))
+    #byte_red=vertex_buffer[v+16]+vertex_buffer[v+17]
+    #byte_green=vertex_buffer[v+18]+vertex_buffer[v+19]
+    #byte_blue=vertex_buffer[v+20]+vertex_buffer[v+21]
+    #error check
+
+    byte_red=vertex_buffer[v]+vertex_buffer[v+1]
+    byte_green=vertex_buffer[v+2]+vertex_buffer[v+3]
+    byte_blue=vertex_buffer[v+4]+vertex_buffer[v+5]
+    #error check
+    #color_terminator=vertex_buffer[v+22]+vertex_buffer[v+23]
+    color_terminator=vertex_buffer[v+6]+vertex_buffer[v+7]
+    if color_terminator != "ff":
+        print(Fore.RED + "Data Error: Vertex: " + str(v) + "===>"+ str(vertex_number) + ": " + str(color_terminator) + " != \"ff\" color buffer Corrupt" +Style.RESET_ALL)
+
+    return str(byte_red) + " " + str(byte_green) + " " + str(byte_blue)
+
+
+
+def get_obj_npc_color(vertex_number,vertex_buffer_size):
+    v=get_complex_vertex_buffer_size(vertex_buffer_size)*2+vertex_number*get_complex_color_buffer_block_size()*2
+    
+    #byte_red=vertex_buffer[v+16]+vertex_buffer[v+17]
+    #byte_green=vertex_buffer[v+18]+vertex_buffer[v+19]
+    #byte_blue=vertex_buffer[v+20]+vertex_buffer[v+21]
+
+    byte_red=vertex_buffer[v]+vertex_buffer[v+1]
+    byte_green=vertex_buffer[v+2]+vertex_buffer[v+3]
+    byte_blue=vertex_buffer[v+4]+vertex_buffer[v+5]
+    #error check
+    #color_terminator=vertex_buffer[v+22]+vertex_buffer[v+23]
+    color_terminator=vertex_buffer[v+6]+vertex_buffer[v+7]
+    if color_terminator != "ff":
+        print(Fore.RED + "Data Error: Vertex: " + str(v) + "===>"+ str(vertex_number) + ": " + str(color_terminator) + " != \"ff\" color buffer Corrupt" +Style.RESET_ALL)
+
+    #convert Hex to RGG (0 - 255), then normalize to (0 - 1)
+    normalized_red=(int(byte_red,16))/255
+    normalized_green=(int(byte_green,16))/255
+    normalized_blue=(int(byte_blue,16))/255
+
+    return str(normalized_red) + " " + str(normalized_green) + " " + str(normalized_blue)
+
+def get_obj_npc_bone_buffer(vertex_number,vertex_buffer_size):
+    v=(get_complex_vertex_buffer_size(vertex_buffer_size)*2+get_complex_color_buffer_size(vertex_buffer_size)*2+vertex_number*get_complex_bone_buffer_block_size()*2)
+    temp_string=""
+    for index in range(get_complex_bone_buffer_block_size()*2):
+        temp_string+=vertex_buffer[v+index]
+    return str(temp_string)
+
+
+
+
+
+
+
+
+
+
+
+
 
 #######################
 # SIMPLE ASSETS
@@ -429,6 +624,7 @@ global index_count
 global vertex_count
 global vertex_buffer
 global index_buffer
+global bone_name_hash
 
 asset_name='NA'
 index_count='NA'
@@ -440,12 +636,14 @@ vertex_buffer_block_size='NA'
 
 
 bind_pose_buffer=''
+bind_pos_matrix_count=0
 bind_pose_flag=0
 bind_pose_complete=0
 
 bone_name_hash=""
 root_bone_name_hash=""
-
+matrix_row=0
+matrix_col=0
 
 count=0
 #comb through file, line by line
@@ -458,13 +656,13 @@ for line in YAML_LINE:
     if "m_BindPose:" in line:
         if "m_BindPose: []" in line:
             print("Bind Pose Buffer"+ Fore.YELLOW + "[NO DATA]" +Style.RESET_ALL)           
-        else:
+        elif "m_BindPose:" in line:
             bind_pose_flag=1
 
     if "m_BoneNameHashes:" in line:
         if len(line.strip().split(":")) > 1:
             bone_name_hash=str(line.strip().split(":")[1]).strip()
-            bind_pose_complete=0
+            bind_pose_complete=1
             print("Bone Name Hashes: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
         elif bind_pose_flag == 1 and len(line.split(":")) == 1:
             print("Pose Binding Data"+ Fore.RED + "[FAIL]" +Style.RESET_ALL)     
@@ -507,8 +705,24 @@ for line in YAML_LINE:
         count+=1    #Copy Vertex Buffer 
     
     #Copy Bind Pose Data
-    if "m_BindPose:" in line:
-        print("DEBUG - BIND POSE MATRIX")
+    if bind_pose_flag == 1 and bind_pose_complete != 1:   
+        if len(str(str(line).split("e")[1].split(":")[0].strip())) > 0:
+            if str(str(line).split("e")[1].split(":")[0].strip())[0].isdigit():
+                matrix_id=int(str(matrix_col)+str(matrix_row))
+                test_value=int(str(line).split("e")[1].split(":")[0].strip())
+                if int(matrix_id) == int(test_value):
+                    bind_pose_buffer+=line.split(":")[1].strip()+" "
+                    matrix_row+=1
+                if matrix_row == 4:
+                    matrix_row = 0
+                    matrix_col+=1
+                if matrix_col == 4:
+                    matrix_row=0
+                    matrix_col=0
+                    bind_pos_matrix_count+=1
+
+
+        #print("DEBUG - BIND POSE MATRIX")
         #bind_pose_buffer=str(line.split(":", maxsplit=1)[1].strip())
 
 
@@ -518,6 +732,7 @@ print("Asset Name: "+Fore.GREEN + str(asset_name)+Style.RESET_ALL)
 print("Indexs: "+Fore.GREEN +str(index_count)+Style.RESET_ALL)
 print("Vertexs: "+Fore.GREEN +str(vertex_count)+Style.RESET_ALL)
 print("Vertex Buffer Size: "+ Fore.GREEN +str(vertex_buffer_size)+Style.RESET_ALL)
+print("Bind Pose Count: "+ Fore.GREEN +str(bind_pos_matrix_count)+Style.RESET_ALL)
 
 
 
@@ -526,9 +741,9 @@ print("Vertex Buffer Size: "+ Fore.GREEN +str(vertex_buffer_size)+Style.RESET_AL
 ########################################################################################################################################
 
 
-asset_type=get_asset_type(vertex_count,vertex_buffer_size)
+asset_type=get_asset_type(vertex_count,vertex_buffer_size,bind_pos_matrix_count)
 
-material_list=get_material_list(vertex_count,vertex_buffer_size)
+material_list=get_material_list(vertex_count,vertex_buffer_size,bind_pos_matrix_count)
 
 if len(material_list.split()) == len(material_vertex_count_array.split()):
     print("Vertex Colors Optimization: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
@@ -549,6 +764,7 @@ else:
 
 print("Asset Name: "+Fore.GREEN + str(asset_name)+Style.RESET_ALL)
 print("Indexs: "+Fore.GREEN +str(index_count)+Style.RESET_ALL)
+print("Index Buffer Size: "+Fore.GREEN +str(len(index_buffer))+Style.RESET_ALL)
 print("Vertexs: "+Fore.GREEN +str(vertex_count)+Style.RESET_ALL)
 print("Vertex Buffer Size: "+ Fore.GREEN +str(vertex_buffer_size)+Style.RESET_ALL)
 
@@ -556,7 +772,7 @@ print("Vertex Buffer Size: "+ Fore.GREEN +str(vertex_buffer_size)+Style.RESET_AL
 if asset_type == "simple":
     vertex_buffer_block_size=(vertex_buffer_size/vertex_count)
     print("Vertex Buffer Block Size: " +Fore.GREEN+ str(vertex_buffer_block_size)+Style.RESET_ALL)
-elif asset_type == "complex":
+elif asset_type == "npc" or asset_type == "goose":
     print("Complex Vertex Buffer Block Size: " +Fore.GREEN+ str(get_complex_vertex_buffer_size(vertex_count))+Style.RESET_ALL)
     print("Complex Color and UV Buffer Block Size: " +Fore.GREEN+ str(get_complex_color_buffer_size(vertex_count))+Style.RESET_ALL)
     print("Complex Bone Buffer Block Size: " +Fore.GREEN+ str(get_complex_bone_buffer_size(vertex_count))+Style.RESET_ALL)
@@ -578,14 +794,6 @@ collada_file = open(sys.argv[1].split(".")[0]+".dae", "w")
 # Variables
 collada_gemotery_id=str(asset_name)+"-mesh"
 collada_name=str(asset_name)
-
-collada_effect_id="tempMAT-fx"
-collada_effect_name="tempMAT"
-
-collada_library_material_id=collada_effect_name
-collada_library_material_name=collada_effect_name
-
-
 
 
 
@@ -633,8 +841,8 @@ collada_file.write("</asset>\n")
 
 collada_file.write("<library_effects>\n")
 
-for material_num in range(len(material_list.split())+1):
-    
+#for material_num in range(len(material_list.split())+1):
+for material_num in range(1):    
     collada_material_effect_name=generate_material_name(material_num) + "-effect"
     
     collada_file.write("<effect id=\"" + str(collada_material_effect_name) + "\">\n")
@@ -663,8 +871,8 @@ collada_file.write("</library_effects>\n")
 
 collada_file.write("<library_materials>\n")
 
-for material_num in range(len(material_list.split())+1):
-    
+#for material_num in range(len(material_list.split())+1):
+for material_num in range(1):    
     collada_library_material_id=generate_material_name(material_num) + "-material"   
     collada_library_material_name=generate_material_name(material_num)
     collada_library_material_url=generate_material_name(material_num) + "-effect"
@@ -702,7 +910,7 @@ collada_file.write("<source id=\"" + collada_position_source_id + "\">\n")
 collada_file.write("<float_array id=\"" + collada_position_array_name + "\" count=\""+str(collada_position_count*3)+"\"> ")
 
 for collada_position in range(int(collada_position_count)):
-    if asset_type == "complex":
+    if asset_type == "npc" or asset_type == "goose":
         collada_file.write(get_obj_vertex(collada_position,collada_position_count) + " ")
     elif asset_type == "simple":
         collada_file.write(get_simple_obj_vertex(collada_position,collada_position_count) + " ")
@@ -735,7 +943,7 @@ collada_file.write("<float_array id=\"" + collada_normal_array_name + "\" count=
 
 #Normals go here
 for collada_normal in range(int(collada_normal_count)):
-    if asset_type == "complex":
+    if asset_type == "npc" or asset_type == "goose":
         collada_file.write(get_obj_normal(collada_normal,collada_normal_count) + " ")
     elif asset_type == "simple":
         collada_file.write(get_simple_obj_normal(collada_normal,collada_normal_count) + " ")
@@ -770,8 +978,10 @@ collada_file.write("<float_array id=\"" + collada_color_array_name + "\" count=\
 #Normals go here
 for collada_color in range(int(collada_color_count)):
     
-    if asset_type == "complex":
+    if asset_type == "goose":
         collada_file.write(get_obj_color(collada_color,collada_color_count) + " 1 " )
+    if asset_type == "npc":
+        collada_file.write(get_obj_npc_color(collada_color,collada_color_count) + " 1 " )
     if asset_type == "simple":
          collada_file.write(get_simple_obj_color(collada_color,collada_color_count) + " 1 ")       
 collada_file.write("</float_array>\n")
@@ -803,50 +1013,77 @@ collada_file.write("</vertices>\n")
 
 material_index=0
 new_material_flag=0
-for material_num in range(len(material_list.split())):
-    print("DEBUG - MATERIAL NUM: " + str(material_num))
-    new_material_flag=0
-    collada_library_material_id=generate_material_name(material_num) + "-material"
-    material_vertex_start=int(material_vertex_start_array.split()[material_num])
-    material_vertex_end=int(material_vertex_count_array.split()[material_num])+material_vertex_start-1
+#for material_num in range(len(material_list.split())):
+    #print("DEBUG - MATERIAL NUM: " + str(material_num))
+    #new_material_flag=0
+    #collada_library_material_id=generate_material_name(material_num) + "-material"
+    #material_vertex_start=int(material_vertex_start_array.split()[material_num])
+    #material_vertex_end=int(material_vertex_count_array.split()[material_num])+material_vertex_start-1
     
-    current_face_count=0
-    for face in range(int(index_count/3)):
-        temp_face=get_obj_face(face)
-        v1=temp_face.split()[0]
-        v2=temp_face.split()[1]
-        v3=temp_face.split()[2]
+    #current_face_count=0
+    #for face in range(int(index_count/3)):
+        #temp_face=get_obj_face(face)
+        #v1=temp_face.split()[0]
+        #v2=temp_face.split()[1]
+        #v3=temp_face.split()[2]
 
-        if (int(v1) <= int(material_vertex_end)) and (int(v2) <= int(material_vertex_end)) and (int(v3) <= int(material_vertex_end)):
-            if ((int(v1) >= int(material_vertex_start)) and (int(v2) >= int(material_vertex_start)) and (int(v3) >= int(material_vertex_start))):
-                current_face_count+=1
+        #if (int(v1) <= int(material_vertex_end)):
+            #if(int(v2) <= int(material_vertex_end)):
+                #if(int(v3) <= int(material_vertex_end)):
+                    #if (int(v1) >= int(material_vertex_start)): 
+                        #if(int(v2) >= int(material_vertex_start)):
+                            #if(int(v3) >= int(material_vertex_start)):
+                                #current_face_count+=1
 
-    collada_triangle_vertex_count=current_face_count
+                                #collada_triangle_vertex_count=current_face_count
 
-    collada_file.write("<triangles material=\"" + str(collada_library_material_id) + "\" count=\""+str(collada_triangle_vertex_count) + "\">\n")
-    collada_file.write("<input semantic=\"VERTEX\" source=\"#" + collada_vertex_source_id + "\" offset=\"0\"/>\n")
-    collada_file.write("<input semantic=\"NORMAL\" source=\"#" + collada_normal_source_id + "\" offset=\"1\"/>\n")
-    collada_file.write("<input semantic=\"COLOR\" source=\"#" + collada_color_source_id + "\" offset=\"2\" set=\"0\"/>\n")
+                                #collada_file.write("<triangles material=\"" + str(collada_library_material_id) + "\" count=\""+str(collada_triangle_vertex_count) + "\">\n")
+                                #collada_file.write("<input semantic=\"VERTEX\" source=\"#" + collada_vertex_source_id + "\" offset=\"0\"/>\n")
+                                #collada_file.write("<input semantic=\"NORMAL\" source=\"#" + collada_normal_source_id + "\" offset=\"1\"/>\n")
+                                #collada_file.write("<input semantic=\"COLOR\" source=\"#" + collada_color_source_id + "\" offset=\"2\" set=\"0\"/>\n")
+                            #else:
+                                #print("ERROR: FACE: "+str(face)+" V1: "+str(v1)  +" V3: "+str(v3) + " out of vertex_start "+ Fore.RED + "["+str(material_vertex_start)+"]" +Style.RESET_ALL+  " vertex_end "+ Fore.RED + "["+str(material_vertex_end)+"]" +Style.RESET_ALL)
+                        #else:
+                            #print("ERROR: FACE: "+str(face) +" V1: "+str(v1)  +" V2: "+str(v2) + " out of vertex_start "+ Fore.RED + "["+str(material_vertex_start)+"]" +Style.RESET_ALL+  " vertex_end "+ Fore.RED + "["+str(material_vertex_end)+"]" +Style.RESET_ALL)
+                    #else:
+                        #print("ERROR: V1 out of vertex_start "+ Fore.RED + "[FAIL]" +Style.RESET_ALL)
+                #else:
+                    #print("ERROR: FACE: "+str(face) +" V1: "+str(v1)  +" V3: "+str(v3) + " out of vertex_start "+ Fore.RED + "["+str(material_vertex_start)+"]" +Style.RESET_ALL+  " vertex_end "+ Fore.RED + "["+str(material_vertex_end)+"]" +Style.RESET_ALL)
+            #else:
+                #print("ERROR: FACE: "+str(face) +" V1: "+str(v1)  +" V2: "+str(v2) + " out of vertex_start "+ Fore.RED + "["+str(material_vertex_start)+"]" +Style.RESET_ALL + "  vertex_end "+ Fore.RED + "["+str(material_vertex_end)+"]" +Style.RESET_ALL)
+        #else:
+            #print("ERROR: V1 out of vertex_end "+ Fore.RED + "[FAIL]" +Style.RESET_ALL)
 
     #Write the index buffer
-    collada_file.write("<p>")
+    
+
+
+
+collada_triangle_vertex_count=index_count
+
+collada_file.write("<triangles material=\"" + str(collada_library_material_id) + "\" count=\""+str(collada_triangle_vertex_count) + "\">\n")
+collada_file.write("<input semantic=\"VERTEX\" source=\"#" + collada_vertex_source_id + "\" offset=\"0\"/>\n")
+collada_file.write("<input semantic=\"NORMAL\" source=\"#" + collada_normal_source_id + "\" offset=\"1\"/>\n")
+collada_file.write("<input semantic=\"COLOR\" source=\"#" + collada_color_source_id + "\" offset=\"2\" set=\"0\"/>\n")
+
+collada_file.write("<p>")
 
 
 
 
-    for face in range(int(index_count/3)):
-        temp_face=get_obj_face(face)
-        v1=temp_face.split()[0]
-        v2=temp_face.split()[1]
-        v3=temp_face.split()[2]
+for face in range(int(index_count/3)):
+    temp_face=get_obj_face(face)
+    v1=temp_face.split()[0]
+    v2=temp_face.split()[1]
+    v3=temp_face.split()[2]
         
-        if ((int(v1) > int(material_vertex_end)) or (int(v2) > int(material_vertex_end)) or (int(v3) > int(material_vertex_end))) and new_material_flag != 1:
+        #if ((int(v1) > int(material_vertex_end)) or (int(v2) > int(material_vertex_end)) or (int(v3) > int(material_vertex_end))) and new_material_flag != 1:
             #print("Writing Material: "+ Fore.YELLOW + "["+ str(current_material)+"]" +Style.RESET_ALL)
-            material_index+=1
-            new_material_flag=1
-        elif ((int(v1) >= int(material_vertex_start)) and (int(v2) >= int(material_vertex_start)) and (int(v3) >= int(material_vertex_start))) and new_material_flag != 1:
+            #material_index+=1
+            #new_material_flag=1
+        #elif ((int(v1) >= int(material_vertex_start)) and (int(v2) >= int(material_vertex_start)) and (int(v3) >= int(material_vertex_start))) and new_material_flag != 1:
             #Write Face
-            collada_file.write(v1+" "+v1+" "+v1+" "+v2+" "+v2+" "+v2+" "+v3+" "+v3+" "+v3+" ")
+    collada_file.write(v1+" "+v1+" "+v1+" "+v2+" "+v2+" "+v2+" "+v3+" "+v3+" "+v3+" ")
 
 
 
@@ -856,8 +1093,8 @@ for material_num in range(len(material_list.split())):
             #print("DEBUG - V1: " + str(v1) + " >= " + str(material_vertex_start) + " or > " + str(material_vertex_end) )       	
             #print("DEBUG - V2: " + str(v2)+ " >= " + str(material_vertex_start) + " or > " + str(material_vertex_end) )   
             #print("DEBUG - V3: " + str(v3)+ " >= " + str(material_vertex_start) + " or > " + str(material_vertex_end) )          		       
-    collada_file.write("</p>\n")
-    collada_file.write("</triangles>\n")
+collada_file.write("</p>\n")
+collada_file.write("</triangles>\n")
 
 
 
@@ -874,14 +1111,138 @@ collada_file.write("</mesh>\n")
 collada_file.write("</geometry>\n")
 collada_file.write("</library_geometries>\n")
 
-#########################
-# COLLADA CONTROLELRS
-#########################
+#########################################################################################################
+# COLLADA CONTROLELRS - BONE INFORMATION
+#########################################################################################################
 
 
 collada_file.write("<library_controllers>\n")
 
+if asset_type == "goose" or asset_type == "npc":
+
+
+
+    collade_bone_number=bind_pos_matrix_count
+
+    collada_skin_id="Body_Armature_"+str(asset_name)+"-skin"
+    collada_skin_name="Body_Armature"
+    collada_skin_source=collada_gemotery_id
+
+
+    collada_skin_joints_id="Body_Armature_"+str(asset_name)+"-skin-joints"
+    collada_skin_joints_array_name="Body_Armature_"+str(asset_name)+"-skin-joints-array"
+    collade_bone_name_array_count=bind_pos_matrix_count
+    #########################
+    # SKINNING INFO
+    #########################
+    collada_file.write("<controller id=\"" + str(collada_skin_id) + "\" name=\"" + str(collada_skin_name) + "\">\n")
+    collada_file.write("<skin source=\"#" + str(collada_skin_source) + "\">\n")
+    collada_file.write("<bind_shape_matrix>1 0 0 0 0 1 0 0 0 0 1 -5.206488 0 0 0 1</bind_shape_matrix>\n")
+    collada_file.write("<source id=\"" + str(collada_skin_joints_id) + "\">\n")
+    collada_file.write("<Name_array id=\"" + str(collada_skin_joints_array_name) + "\" count=\"" + str(int(collade_bone_name_array_count)) + "\"> ")
+
+    #Bone name placeholder
+    #collada_file.write("Bone Bone_001 Bone_002 Bone_003 Bone_004 Bone_016 Bone_010 Bone_011 Bone_012 Bone_014 Bone_015 Bone_018 Bone_019 Bone_020 Bone_022 Bone_023 Bone_024 Bone_032 Bone_026 Bone_027 Bone_028 Bone_030 Bone_031 Bone_034 Bone_035 Bone_036 Bone_038 Bone_039 Bone_040 Bone_051 Bone_050 Bone_049 Bone_048 Bone_047 Bone_005 Bone_007 Bone_013 Bone_017 Bone_021 Bone_025 Bone_029 Bone_033 Bone_037 Bone_054 Bone_055 Bone_053 Bone_052")
+    collada_file.write(get_bone_name_buffer(collade_bone_number))
+    collada_file.write("</Name_array>\n")
+    
+    collada_file.write("<technique_common>\n")
+    collada_file.write("<accessor source=\"#" + str(collada_skin_joints_array_name) + "\" count=\"" + str(int(collade_bone_name_array_count)) + "\" stride=\"1\">\n")
+    collada_file.write("<param name=\"JOINT\" type=\"name\"/>\n")
+    collada_file.write("</accessor>\n")
+    collada_file.write("</technique_common>\n")
+    collada_file.write("</source>\n")
+
+
+
+
+    #########################
+    # BIND POSE
+    #########################
+
+    collada_bind_pose_source_id="Body_Armature_"+str(asset_name)+"-skin-bind_poses"
+    collada_bind_pose_array_name="Body_Armature_"+str(asset_name)+"-skin-bind_poses-array"
+
+    collada_file.write("<source id=\"" + str(collada_bind_pose_source_id) + "\">\n")
+    collada_file.write("<float_array id=\"" + str(collada_bind_pose_array_name) + "\" count=\"" + str(int(collade_bone_number*16)) + "\">\n")
+
+    #Write Bind Pose here
+
+
+    collada_file.write("</float_array>\n")
+    collada_file.write("<technique_common>\n")
+    collada_file.write("<accessor source=\"#" + str(collada_bind_pose_array_name) + "\" count=\"" + str(int(collade_bone_number)) + "\" stride=\"16\">\n")
+    collada_file.write("<param name=\"TRANSFORM\" type=\"float4x4\"/>\n")
+    collada_file.write("</accessor>\n")
+    collada_file.write("</technique_common>\n")
+    collada_file.write("</source>\n")
+
+
+
+
+    #########################
+    # SKIN WEIGHTS
+    #########################
+    
+    collada_skin_weight_source_id="Body_Armature_"+str(asset_name)+"-skin-weights"
+    collada_skin_weight_array_name="Body_Armature_"+str(asset_name)+"-skin-weights-array"
+    collade_skin_weight_count=0
+
+    collada_file.write("<source id=\"" + str(collada_skin_weight_source_id) + "\">\n")
+    collada_file.write("<float_array id=\"" + str(collada_skin_weight_array_name) + "\" count=\"" + str(int(collade_skin_weight_count)) + "\">\n")
+
+    #Write Weights Here
+
+    collada_file.write("<technique_common>\n")
+    collada_file.write("<accessor source=\"#" + str(collada_skin_weight_array_name) + "\" count=\"" + str(int(collade_skin_weight_count)) + "\" stride=\"1\">\n")
+    collada_file.write("<param name=\"WEIGHT\" type=\"float\"/>\n")
+    collada_file.write("</accessor>\n")
+    collada_file.write("</technique_common>\n")
+    collada_file.write("</source>\n")
+
+
+    ##################################
+    # JOINT and WEIGHT INDEX BUFFER
+    #################################
+
+
+
+    collada_file.write("<joints>\n")
+    collada_file.write("<input semantic=\"JOINT\" source=\"#" + str(collada_skin_joints_id) + "\"/>\n")
+    collada_file.write("<input semantic=\"INV_BIND_MATRIX\" source=\"#" + str(collada_bind_pose_source_id) + "\"/>\n")
+    collada_file.write("</joints>\n")
+    collada_file.write("<vertex_weights count=\"" + str(vertex_count) + "\">\n")
+    collada_file.write("<input semantic=\"JOINT\" source=\"#" + str(collada_skin_joints_id) + "\" offset=\"0\"/>\n")
+    collada_file.write("<input semantic=\"WEIGHT\" source=\"#" + str(collada_skin_weight_source_id) + "\" offset=\"1\"/>\n")
+    collada_file.write("<vcount>\n")
+
+          #VCOUNT - NUMBER OF WEIGHTS PER VERTEX - BETWEEN 1 and 4
+
+
+
+
+    collada_file.write("</vcount>\n")
+    collada_file.write("<v>\n")
+
+
+          #VERTEX POSTION
+
+
+
+
+
+    collada_file.write("</vertex_weights>\n")
+    collada_file.write("</skin>\n")
+    collada_file.write("</controller>\n")
+
+
+
 collada_file.write("</library_controllers>\n")
+
+
+
+
+
 
 
 
@@ -900,21 +1261,63 @@ collada_visual_scene_url="Scene"
 
 collada_visual_scene_node_id=str(asset_name)
 collada_visual_scene_node_name=str(asset_name)
-"+str(collada_library_material_name) + "
+
 
 #########################
 # COLLADA BINDING
 #########################
 collada_file.write("<library_visual_scenes>\n")
 collada_file.write("<visual_scene id=\"" + str(collada_visual_scene_id) + "\" name=\"" + str(collada_visual_scene_name) +"\">\n")
-collada_file.write("<node id=\"Node_000000000349DD80\" name=\"Node_000000000349DD80\" type=\"NODE\">\n")
-collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
-collada_file.write("</node>\n")
-collada_file.write("<node id=\"" + str(collada_visual_scene_node_id) + "\" name=\"" + str(collada_visual_scene_node_name) + "\" type=\"NODE\">\n")
-collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
-collada_file.write("<instance_geometry url=\"#"+str(collada_gemotery_id)+"\" name=\""+str(collada_name)+"\">\n")
-collada_file.write("<bind_material>\n")
-collada_file.write("<technique_common>\n")
+
+
+
+
+
+
+
+#########################
+# WRITE BONES
+#########################
+
+
+if asset_type == "goose" or asset_type == "npc":
+
+    #Root Bone
+    collada_file.write("<node id=\"Armature\" name=\"Armature\" type=\"NODE\">\n")
+    collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 5.206488 0 0 0 1</matrix>\n")
+    collada_file.write("<node id=\"Armature_Bone\" name=\"Bone\" sid=\"Bone\" type=\"JOINT\">\n")
+    collada_file.write("<matrix sid=\"transform\">0.9964491 -0.0740106 -0.04014485 0 0.04014487 0.8367317 -0.5461397 0 0.07401059 0.5425888 0.8367316 0 0 0 0 1</matrix>\n")
+    #All the children bones?
+    for bone_index in range(collade_bone_number):
+
+        collada_file.write("<node id=\"Armature_Bone_001\" name=\"Bone.001\" sid=\"Bone_001\" type=\"JOINT\">\n")
+        collada_file.write("<matrix sid=\"transform\">0.165655 -0.5664322 -0.8072872 0 0.5321904 -0.6378247 0.5567341 0 -0.8302599 -0.5218564 0.1957912 -5.96046e-8 0 0 0 1</matrix>\n")
+        collada_file.write("<extra>\n")
+        collada_file.write("<technique profile=\"blender\">\n")
+        collada_file.write("<layer sid=\"layer\" type=\"string\">0</layer>\n")
+        collada_file.write("<roll sid=\"roll\" type=\"float\">-0.6829612</roll>\n")
+        collada_file.write("<tip_x sid=\"tip_x\" type=\"float\">-1.817046</tip_x>\n")
+        collada_file.write("<tip_y sid=\"tip_y\" type=\"float\">-0.9937923</tip_y>\n")
+        collada_file.write("<tip_z sid=\"tip_z\" type=\"float\">-3.019416</tip_z>\n")
+        collada_file.write("</technique>\n")
+        collada_file.write("</extra>\n")
+        collada_file.write("</node>\n")
+          
+
+
+
+
+elif asset_type == "simple":
+
+    collada_file.write("<node id=\"Node_000000000349DD80\" name=\"Node_000000000349DD80\" type=\"NODE\">\n")
+    collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
+    collada_file.write("</node>\n")
+    collada_file.write("<node id=\"" + str(collada_visual_scene_node_id) + "\" name=\"" + str(collada_visual_scene_node_name) + "\" type=\"NODE\">\n")
+    collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
+    collada_file.write("<instance_geometry url=\"#"+str(collada_gemotery_id)+"\" name=\""+str(collada_name)+"\">\n")
+
+
+
 
 
 
@@ -922,11 +1325,16 @@ collada_file.write("<technique_common>\n")
 # COLLADA BIND MATERIALS
 #########################
 
-for material_num in range(len(material_list.split())):
+collada_file.write("<bind_material>\n")
+collada_file.write("<technique_common>\n")
+
+#for material_num in range(len(material_list.split())):
+    #collada_library_material_id=generate_material_name(material_num) + "-material" 
+    #collada_file.write("<instance_material symbol=\"" + str(collada_library_material_id) + "\" target=\"#" + str(collada_library_material_id) + "\"/>\n")
+
+for material_num in range(1):
     collada_library_material_id=generate_material_name(material_num) + "-material" 
     collada_file.write("<instance_material symbol=\"" + str(collada_library_material_id) + "\" target=\"#" + str(collada_library_material_id) + "\"/>\n")
-
-
 
 
 collada_file.write("</technique_common>\n")
@@ -940,6 +1348,28 @@ collada_file.write("<instance_visual_scene url=\"#"+str(collada_visual_scene_url
 collada_file.write("</scene>\n")
 collada_file.write("</COLLADA>\n")
 
+
+
+
+print("BONE ROOT: " + get_obj_bone_root(vertex_count))
+
+
+
+
+for index in range(vertex_count):
+    print("VERTEX: " +Fore.CYAN + str(index) + Style.RESET_ALL)
+    get_obj_vertex_weight(0,index,vertex_count,asset_type)
+    get_obj_vertex_weight(1,index,vertex_count,asset_type)
+    get_obj_vertex_weight(2,index,vertex_count,asset_type)
+    get_obj_vertex_weight(3,index,vertex_count,asset_type)
+    #print("BONE INDEX 0 :" +Fore.YELLOW + str(get_obj_vertex_weight(0,index,vertex_count,asset_type)) + Style.RESET_ALL)
+    #print("BONE INDEX 1 :" +Fore.YELLOW + str(get_obj_vertex_weight(1,index,vertex_count,asset_type)) + Style.RESET_ALL)
+    #print("BONE INDEX 2 :" +Fore.YELLOW + str(get_obj_vertex_weight(2,index,vertex_count,asset_type)) + Style.RESET_ALL)
+    #print("BONE INDEX 3 :" +Fore.YELLOW + str(get_obj_vertex_weight(3,index,vertex_count,asset_type)) + Style.RESET_ALL)        
+    
+print("BONE COUNT: " + Fore.GREEN +str(bind_pos_matrix_count)+ Style.RESET_ALL)
+print("BONE NAME HASH SIZE: " + Fore.GREEN+ str(len(bone_name_hash))+ Style.RESET_ALL)
+print("BONE NAME HASH BLOCK SIZE: "+ Fore.GREEN + str(len(bone_name_hash)/bind_pos_matrix_count)+ Style.RESET_ALL)
 
 
 
