@@ -1166,8 +1166,10 @@ if asset_type == "goose" or asset_type == "npc":
     collada_file.write("<source id=\"" + str(collada_bind_pose_source_id) + "\">\n")
     collada_file.write("<float_array id=\"" + str(collada_bind_pose_array_name) + "\" count=\"" + str(int(collade_bone_number*16)) + "\">\n")
 
-    #Write Bind Pose here
 
+
+    #Write Bind Pose here
+    collada_file.write(str(bind_pose_buffer))
 
     collada_file.write("</float_array>\n")
     collada_file.write("<technique_common>\n")
