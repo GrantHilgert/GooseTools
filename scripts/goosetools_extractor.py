@@ -9,6 +9,7 @@ import progressbar
 import struct
 from string import *
 from datetime import date
+import numpy as np
 
 #Init Colorama
 init()
@@ -218,7 +219,6 @@ def get_material_list(num_of_vertex, size_of_vertex_buffer,bone_count):
             previous_material=current_material  
         material_vertex_start_array+=str(num_of_vertex) + " "
         material_vertex_count_array+=str(current_material_count) + " "
-
 
 
 
@@ -684,7 +684,7 @@ matrix_col=0
 
 count=0
 #comb through file, line by line
-print("Reading File...")
+print("Reading Mesh File...")
 for line in YAML_LINE: 
     #print("Line{}: {}".format(count, line.strip()))
     
@@ -787,6 +787,290 @@ if len(material_list.split()) == len(material_vertex_count_array.split()):
 else:
     print("WARNING: Assert Vertex Colors Not Optimized"+ Fore.YELLOW + "[WARNING]" +Style.RESET_ALL)    
 
+
+########################################################################################################################################
+#  COMPLEX ASSETS - Preprocess Avatar
+########################################################################################################################################
+
+
+if (asset_type == "goose") or (asset_type == "npc"):
+
+    
+    avatar_name=""
+    avatar_size=0
+
+    avatar_skeleton_flag=0
+    avatar_skelton_ID=""
+
+    avatar_skeleton_pose_flag=0
+    avatar_skeleton_pose_count=0
+
+    avatar_default_pose_flag=0
+    avatar_default_pose_count=0
+
+    avatar_skelton_name_ID_array=""
+
+    avatar_left_hand_bone_index=""
+    avatar_left_hand_bone_index_flag=0
+    
+    avatar_right_hand_bone_index=""
+    avatar_right_hand_bone_index_flag=0  
+    
+    avatar_human_hand_bone_index=""
+
+    avatar_human_bone_mass_array_count=0
+    avatar_human_bone_mass_array_flag=0
+
+    avatar_collider_scale=0
+    avatar_collider_arm_twist=0
+    avatar_collider_fore_arm_twist=0
+    avatar_collider_upper_leg_twist=0
+    avatar_collider_leg_twist=0
+    avatar_collider_arm_stretch=0
+    avatar_collider_leg_stretch=0
+    avatar_collider_feet_spacing=0
+    avatar_collider_has_left_hand=0
+    avatar_collider_has_right_hand=0
+    avatar_collider_has_TDoF=0
+    
+    avatar_bone_name_array=""
+    avatar_bone_name_array_count=0
+
+    avatar_root_motion_bone_index=0
+    avatar_root_motion_bone_array
+
+    avatar_tos_flag=0
+
+    if len(sys.argv) > 2:
+        avatar_file = open(sys.argv[2], "r")
+
+        AVATAR_LINE = avatar_file.readlines()
+
+
+        print("Reading Avatar File...")
+        for line in AVATAR_LINE: 
+
+            if "m_name:" in line:
+                avatar_name=line.split(":")[1].strip()
+
+            elif "m_AvatarSize:" in line:  
+                avatar_size=int(line.split(":")[1].strip())
+
+            elif "m_ID:" in line:
+                avatar_skelton_ID=line.split(":")[1].strip()
+
+            elif "m_AvatarSkeletonPose:" in line:
+                avatar_skeleton_pose_flag=1
+                avatar_default_pose_flag=0
+            
+            elif "- t:" in line and avatar_skeleton_pose_flag == 1:
+                avatar_skeleton_pose_count+=1
+            
+            elif "m_DefaultPose:" in line:
+                avatar_default_pose_flag=1
+                avatar_skeleton_pose_flag=0
+            
+            elif "- t:" in line and avatar_default_pose_flag == 1:
+                avatar_default_pose_count+=1     
+
+            elif "m_SkeletonNameIDArray:" in line:
+                avatar_skelton_name_ID_array=line.split(":")[1].strip()
+
+            elif "m_LeftHand:" in line:
+                avatar_left_hand_bone_index_flag=1
+                avatar_right_hand_bone_index_flag=0 
+                
+            elif "m_RightHand:" in line:
+                avatar_left_hand_bone_index_flag=0
+                avatar_right_hand_bone_index_flag=1
+                
+
+            elif "m_HandBoneIndex:" in line and avatar_left_hand_bone_index_flag == 1:
+                avatar_left_hand_bone_inde=line.split(":")[1].strip()
+
+            elif "m_HandBoneIndex:" in line and avatar_right_hand_bone_index_flag == 1:
+                avatar_right_hand_bone_index=line.split(":")[1].strip()
+
+            elif "m_HumanBoneIndex:" in line:
+                avatar_human_hand_bone_index=line.split(":")[1].strip()
+
+            elif "m_HumanBoneMass:" in line:
+                avatar_human_bone_mass_array_flag=1
+
+            elif "-" in line and avatar_human_bone_mass_array_flag==1:
+                avatar_human_bone_mass_array_count+=1
+
+            elif "m_ColliderIndex:" in line:
+                avatar_human_bone_mass_array_flag=0
+
+
+            elif "m_TOS:" in line:
+                avatar_tos_flag=1
+
+            elif ":" in line and avatar_tos_flag ==1:
+                avatar_bone_name_array+= line.split(":")[1].strip() + " "
+                avatar_bone_name_array_count+=1
+
+
+
+
+
+
+
+
+########################################################################################################################################
+#  COMPLEX ASSETS - Preprocess Avatar
+########################################################################################################################################
+
+
+
+
+        avatar_bone_name_hash_array=np.zeros(avatar_bone_name_array_count, dtype=int)
+
+        avatar_skeleton_pose_array=np.zeros((avatar_skeleton_pose_count*10), dtype=float)
+        avatar_default_pose_array=np.zeros((avatar_default_pose_count*10), dtype=float)
+        
+        avatar_human_root_bone_array=np.zeros(10, dtype=float)
+
+        avatar_human_bone_mass_array=np.zeros(avatar_human_bone_mass_array_count, dtype=float)
+        avatar_root_motion_bone_array=np.zeros(10, dtype=float)
+
+        avatar_skeleton_pose_flag=0
+        avatar_default_pose_flag=0
+        avatar_root_bone_flag=0
+        avatar_tos_flag=0
+
+        avatar_skeleton_pose_index=0
+        avatar_default_pose_index=0
+        avatar_bone_name_hash_index=0
+
+        avatar_file.seek(0)
+        AVATAR_LINE = avatar_file.readlines()
+
+        print("Reading Avatar File...")
+        for line in AVATAR_LINE: 
+    
+            if "m_AvatarSkeletonPose:" in line:
+                avatar_skeleton_pose_flag=1
+                avatar_default_pose_flag=0
+                avatar_root_bone_flag=0
+            elif "t:" in line and avatar_skeleton_pose_flag == 0:
+                avatar_skeleton_pose_array[avatar_skeleton_pose_index*10] = float(line.split("{x:")[1].split(",")[0].strip())
+                avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+1] = float(line.split("y:")[1].split(",")[0].strip())
+                avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+2] = float(line.split("z:")[1].split("}")[0].strip())
+
+
+            elif "q:" in line and avatar_skeleton_pose_flag == 0:
+                avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+3] = float(line.split("{x:")[1].split(",")[0].strip())
+                avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+4] = float(line.split("y:")[1].split(",")[0].strip())
+                avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+5] = float(line.split("z:")[1].split(",")[0].strip())
+                avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+6] = float(line.split("w:")[1].split("}")[0].strip())
+
+            elif "s:" in line and avatar_skeleton_pose_flag == 0:
+                avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+7] = float(line.split("{x:")[1].split(",")[0].strip())
+                avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+8] = float(line.split("y:")[1].split(",")[0].strip())
+                avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+9] = float(line.split("z:")[1].split("}")[0].strip())
+                avatar_skeleton_pose_index+=1
+
+
+            elif "m_DefaultPose:" in line:
+                avatar_default_pose_flag=1
+                avatar_skeleton_pose_flag=0
+                avatar_root_bone_flag=0
+            elif "t:" in line and avatar_default_pose_flag == 0:
+                avatar_default_pose_array[avatar_default_pose_index*10] = float(line.split("{x:")[1].split(",")[0].strip())
+                avatar_default_pose_array[avatar_default_pose_index*10+1] = float(line.split("y:")[1].split(",")[0].strip())
+                avatar_default_pose_array[avatar_default_pose_index*10+2] = float(line.split("z:")[1].split("}")[0].strip())
+
+
+            elif "q:" in line and avatar_default_pose_flag == 0:
+                avatar_default_pose_array[avatar_default_pose_index*10+3] = float(line.split("{x:")[1].split(",")[0].strip())
+                avatar_default_pose_array[avatar_default_pose_index*10+4] = float(line.split("y:")[1].split(",")[0].strip())
+                avatar_default_pose_array[avatar_default_pose_index*10+5] = float(line.split("z:")[1].split(",")[0].strip())
+                avatar_default_pose_array[avatar_default_pose_index*10+6] = float(line.split("w:")[1].split("}")[0].strip())
+
+            elif "s:" in line and avatar_default_pose_flag == 0:
+                avatar_default_pose_array[avatar_default_pose_index*10+7] = float(line.split("{x:")[1].split(",")[0].strip())
+                avatar_default_pose_array[avatar_default_pose_index*10+8] = float(line.split("y:")[1].split(",")[0].strip())
+                avatar_default_pose_array[avatar_default_pose_index*10+9] = float(line.split("z:")[1].split("}")[0].strip())
+                avatar_default_pose_index+=1
+
+
+            elif "m_RootX:" in line:
+                avatar_default_pose_flag=0
+                avatar_skeleton_pose_flag=0
+                avatar_root_bone_flag=1
+            elif "t:" in line and avatar_default_pose_flag == 0:
+                avatar_human_root_bone_array[0] = float(line.split("{x:")[1].split(",")[0].strip())
+                avatar_human_root_bone_array[1] = float(line.split("y:")[1].split(",")[0].strip())
+                avatar_human_root_bone_array[2] = float(line.split("z:")[1].split("}")[0].strip())
+
+
+            elif "q:" in line and avatar_default_pose_flag == 0:
+                avatar_human_root_bone_array[3] = float(line.split("{x:")[1].split(",")[0].strip())
+                avatar_human_root_bone_array[4] = float(line.split("y:")[1].split(",")[0].strip())
+                avatar_human_root_bone_arrayy[5] = float(line.split("z:")[1].split(",")[0].strip())
+                avatar_human_root_bone_array[6] = float(line.split("w:")[1].split("}")[0].strip())
+
+            elif "s:" in line and avatar_default_pose_flag == 0:
+                avatar_human_root_bone_array[7] = float(line.split("{x:")[1].split(",")[0].strip())
+                avatar_human_root_bone_array[8] = float(line.split("y:")[1].split(",")[0].strip())
+                avatar_human_root_bone_array[9] = float(line.split("z:")[1].split("}")[0].strip())
+                avatar_default_pose_index+=1           
+
+
+
+
+
+            elif "m_TOS:" in line:
+                avatar_tos_flag=1
+
+            elif ":" in line and avatar_tos_flag == 1:
+                avatar_bone_name_hash_array[avatar_bone_name_hash_index] = int(line.split(:)[0].strip())
+                avatar_bone_name_hash_index+=1
+
+
+
+
+    #print("Line{}: {}".format(count, line.strip()))
+    
+    ##############BIND POSE PARSER############
+        #Copy Bind Pose Data
+    if "m_name:" in line:
+        if "m_BindPose: []" in line:
+            print("Bind Pose Buffer"+ Fore.YELLOW + "[NO DATA]" +Style.RESET_ALL)           
+        elif "m_BindPose:" in line:
+            bind_pose_flag=1
+
+    if "m_BoneNameHashes:" in line:
+        if len(line.strip().split(":")) > 1:
+            bone_name_hash=str(line.strip().split(":")[1]).strip()
+            bind_pose_complete=1
+            print("Bone Name Hashes: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
+        elif bind_pose_flag == 1 and len(line.split(":")) == 1:
+            print("Pose Binding Data"+ Fore.RED + "[FAIL]" +Style.RESET_ALL)     
+
+    if "m_RootBoneNameHash:" in line:
+        if line.strip().split(":")[1].strip() != str(0):
+            root_bone_name_hash=str(line.strip().split(":")[1]).strip()
+            print("Root Bone Name Hashes: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
+
+        else:
+            print("Root Bone Name Hashes: "+ Fore.YELLOW + "[NO DATA]" +Style.RESET_ALL)  
+
+
+
+
+
+
+
+
+
+
+
+    else:
+        print("ERROR - Complet Asset requires Accompaning Avatar Asset"+ Fore.RED + "[FAIL]" +Style.RESET_ALL) 
+        print("Please call with \"python goosetools_extractor.py <mesh.asset> <avatar.asset>\"")
 
 
 
@@ -1410,11 +1694,11 @@ print("BONE ROOT: " + get_obj_bone_root(vertex_count))
 
 
 
-for index in range(vertex_count):
-    print("VERTEX: " +Fore.CYAN + str(index) + Style.RESET_ALL +" "+Fore.CYAN + str(get_obj_vertex_weight_count(index,vertex_count,asset_type)) + Style.RESET_ALL)
-    print("BONE 1: " + str(get_obj_vertex_weight(0,index,vertex_count,asset_type)))
-    print("BONE 2: " + str(get_obj_vertex_weight(1,index,vertex_count,asset_type)))
-    print("BONE 3: " + str(get_obj_vertex_weight(2,index,vertex_count,asset_type)))
+#for index in range(vertex_count):
+    #print("VERTEX: " +Fore.CYAN + str(index) + Style.RESET_ALL +" "+Fore.CYAN + str(get_obj_vertex_weight_count(index,vertex_count,asset_type)) + Style.RESET_ALL)
+    #print("BONE 1: " + str(get_obj_vertex_weight(0,index,vertex_count,asset_type)))
+    #print("BONE 2: " + str(get_obj_vertex_weight(1,index,vertex_count,asset_type)))
+    #print("BONE 3: " + str(get_obj_vertex_weight(2,index,vertex_count,asset_type)))
     #print("BONE 4: " + str(get_obj_vertex_weight(3,index,vertex_count,asset_type)))
     #print("BONE INDEX 0 :" +Fore.YELLOW + str(get_obj_vertex_weight(0,index,vertex_count,asset_type)) + Style.RESET_ALL)
     #print("BONE INDEX 1 :" +Fore.YELLOW + str(get_obj_vertex_weight(1,index,vertex_count,asset_type)) + Style.RESET_ALL)
