@@ -837,17 +837,16 @@ if (asset_type == "goose") or (asset_type == "npc"):
     avatar_bone_name_array_count=0
 
     avatar_root_motion_bone_index=0
-    avatar_root_motion_bone_array
+
 
     avatar_tos_flag=0
-
     if len(sys.argv) > 2:
         avatar_file = open(sys.argv[2], "r")
 
         AVATAR_LINE = avatar_file.readlines()
 
 
-        print("Reading Avatar File...")
+        print("Preprocessing File...")
         for line in AVATAR_LINE: 
 
             if "m_name:" in line:
@@ -907,7 +906,7 @@ if (asset_type == "goose") or (asset_type == "npc"):
             elif "m_TOS:" in line:
                 avatar_tos_flag=1
 
-            elif ":" in line and avatar_tos_flag ==1:
+            elif ":" in line and avatar_tos_flag == 1:
                 avatar_bone_name_array+= line.split(":")[1].strip() + " "
                 avatar_bone_name_array_count+=1
 
@@ -925,7 +924,7 @@ if (asset_type == "goose") or (asset_type == "npc"):
 
 
 
-        avatar_bone_name_hash_array=np.zeros(avatar_bone_name_array_count, dtype=int)
+        avatar_bone_name_hash_array=np.zeros(avatar_bone_name_array_count, dtype=np.int64)
 
         avatar_skeleton_pose_array=np.zeros((avatar_skeleton_pose_count*10), dtype=float)
         avatar_default_pose_array=np.zeros((avatar_default_pose_count*10), dtype=float)
@@ -954,19 +953,19 @@ if (asset_type == "goose") or (asset_type == "npc"):
                 avatar_skeleton_pose_flag=1
                 avatar_default_pose_flag=0
                 avatar_root_bone_flag=0
-            elif "t:" in line and avatar_skeleton_pose_flag == 0:
+            elif "t:" in line and avatar_skeleton_pose_flag == 1:
                 avatar_skeleton_pose_array[avatar_skeleton_pose_index*10] = float(line.split("{x:")[1].split(",")[0].strip())
                 avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+1] = float(line.split("y:")[1].split(",")[0].strip())
                 avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+2] = float(line.split("z:")[1].split("}")[0].strip())
 
 
-            elif "q:" in line and avatar_skeleton_pose_flag == 0:
+            elif "q:" in line and avatar_skeleton_pose_flag == 1:
                 avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+3] = float(line.split("{x:")[1].split(",")[0].strip())
                 avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+4] = float(line.split("y:")[1].split(",")[0].strip())
                 avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+5] = float(line.split("z:")[1].split(",")[0].strip())
                 avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+6] = float(line.split("w:")[1].split("}")[0].strip())
 
-            elif "s:" in line and avatar_skeleton_pose_flag == 0:
+            elif "s:" in line and avatar_skeleton_pose_flag == 1:
                 avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+7] = float(line.split("{x:")[1].split(",")[0].strip())
                 avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+8] = float(line.split("y:")[1].split(",")[0].strip())
                 avatar_skeleton_pose_array[avatar_skeleton_pose_index*10+9] = float(line.split("z:")[1].split("}")[0].strip())
@@ -977,19 +976,19 @@ if (asset_type == "goose") or (asset_type == "npc"):
                 avatar_default_pose_flag=1
                 avatar_skeleton_pose_flag=0
                 avatar_root_bone_flag=0
-            elif "t:" in line and avatar_default_pose_flag == 0:
+            elif "t:" in line and avatar_default_pose_flag == 1:
                 avatar_default_pose_array[avatar_default_pose_index*10] = float(line.split("{x:")[1].split(",")[0].strip())
                 avatar_default_pose_array[avatar_default_pose_index*10+1] = float(line.split("y:")[1].split(",")[0].strip())
                 avatar_default_pose_array[avatar_default_pose_index*10+2] = float(line.split("z:")[1].split("}")[0].strip())
 
 
-            elif "q:" in line and avatar_default_pose_flag == 0:
+            elif "q:" in line and avatar_default_pose_flag == 1:
                 avatar_default_pose_array[avatar_default_pose_index*10+3] = float(line.split("{x:")[1].split(",")[0].strip())
                 avatar_default_pose_array[avatar_default_pose_index*10+4] = float(line.split("y:")[1].split(",")[0].strip())
                 avatar_default_pose_array[avatar_default_pose_index*10+5] = float(line.split("z:")[1].split(",")[0].strip())
                 avatar_default_pose_array[avatar_default_pose_index*10+6] = float(line.split("w:")[1].split("}")[0].strip())
 
-            elif "s:" in line and avatar_default_pose_flag == 0:
+            elif "s:" in line and avatar_default_pose_flag == 1:
                 avatar_default_pose_array[avatar_default_pose_index*10+7] = float(line.split("{x:")[1].split(",")[0].strip())
                 avatar_default_pose_array[avatar_default_pose_index*10+8] = float(line.split("y:")[1].split(",")[0].strip())
                 avatar_default_pose_array[avatar_default_pose_index*10+9] = float(line.split("z:")[1].split("}")[0].strip())
@@ -1000,23 +999,23 @@ if (asset_type == "goose") or (asset_type == "npc"):
                 avatar_default_pose_flag=0
                 avatar_skeleton_pose_flag=0
                 avatar_root_bone_flag=1
-            elif "t:" in line and avatar_default_pose_flag == 0:
+            elif "t:" in line and avatar_root_bone_flag == 1:
                 avatar_human_root_bone_array[0] = float(line.split("{x:")[1].split(",")[0].strip())
                 avatar_human_root_bone_array[1] = float(line.split("y:")[1].split(",")[0].strip())
                 avatar_human_root_bone_array[2] = float(line.split("z:")[1].split("}")[0].strip())
 
 
-            elif "q:" in line and avatar_default_pose_flag == 0:
+            elif "q:" in line and avatar_root_bone_flag == 1:
                 avatar_human_root_bone_array[3] = float(line.split("{x:")[1].split(",")[0].strip())
                 avatar_human_root_bone_array[4] = float(line.split("y:")[1].split(",")[0].strip())
-                avatar_human_root_bone_arrayy[5] = float(line.split("z:")[1].split(",")[0].strip())
+                avatar_human_root_bone_array[5] = float(line.split("z:")[1].split(",")[0].strip())
                 avatar_human_root_bone_array[6] = float(line.split("w:")[1].split("}")[0].strip())
 
-            elif "s:" in line and avatar_default_pose_flag == 0:
+            elif "s:" in line and avatar_root_bone_flag == 1:
                 avatar_human_root_bone_array[7] = float(line.split("{x:")[1].split(",")[0].strip())
                 avatar_human_root_bone_array[8] = float(line.split("y:")[1].split(",")[0].strip())
                 avatar_human_root_bone_array[9] = float(line.split("z:")[1].split("}")[0].strip())
-                avatar_default_pose_index+=1           
+                avatar_root_bone_flag=0       
 
 
 
@@ -1026,37 +1025,13 @@ if (asset_type == "goose") or (asset_type == "npc"):
                 avatar_tos_flag=1
 
             elif ":" in line and avatar_tos_flag == 1:
-                avatar_bone_name_hash_array[avatar_bone_name_hash_index] = int(line.split(:)[0].strip())
+                avatar_bone_name_hash_array[avatar_bone_name_hash_index] = np.int64(line.split(":")[0].strip())
                 avatar_bone_name_hash_index+=1
 
 
 
 
-    #print("Line{}: {}".format(count, line.strip()))
-    
-    ##############BIND POSE PARSER############
-        #Copy Bind Pose Data
-    if "m_name:" in line:
-        if "m_BindPose: []" in line:
-            print("Bind Pose Buffer"+ Fore.YELLOW + "[NO DATA]" +Style.RESET_ALL)           
-        elif "m_BindPose:" in line:
-            bind_pose_flag=1
 
-    if "m_BoneNameHashes:" in line:
-        if len(line.strip().split(":")) > 1:
-            bone_name_hash=str(line.strip().split(":")[1]).strip()
-            bind_pose_complete=1
-            print("Bone Name Hashes: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
-        elif bind_pose_flag == 1 and len(line.split(":")) == 1:
-            print("Pose Binding Data"+ Fore.RED + "[FAIL]" +Style.RESET_ALL)     
-
-    if "m_RootBoneNameHash:" in line:
-        if line.strip().split(":")[1].strip() != str(0):
-            root_bone_name_hash=str(line.strip().split(":")[1]).strip()
-            print("Root Bone Name Hashes: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
-
-        else:
-            print("Root Bone Name Hashes: "+ Fore.YELLOW + "[NO DATA]" +Style.RESET_ALL)  
 
 
 
@@ -1103,6 +1078,8 @@ elif asset_type == "npc" or asset_type == "goose":
 #print("VERTEX BUFFER: "+ Fore.RED + str(vertex_buffer)+Style.RESET_ALL)
 
 
+for bone_name_index in range(len(avatar_bone_name_array.split())):
+    print(avatar_bone_name_array.split()[bone_name_index])
 
 
 ########################################################################################################################################
