@@ -1668,17 +1668,112 @@ def get_bone_children(bone_name):
     return temp_child_buffer
 
 
+def get_bone_offspring(bone_name):
+    offspring_buffer=""
+    parent_bone="unassigned"
+    #print("DEBUG - BONE NAME: " + str(bone_name))
+    for index in range(len(avatar_bone_name_array.split())):
+        if bone_name == get_avatar_bone_name(index):
+            parent_bone_index=index
+            parent_bone=avatar_bone_name_array.split()[parent_bone_index] 
+    #print("DEBUG - PARRENT BONE: " + str(parent_bone))
+    for index in range(len(avatar_bone_name_array.split())):
+        #print("if " + str(parent_bone) + " in " + str(avatar_bone_name_array.split()[index]) )
+        if (parent_bone in avatar_bone_name_array.split()[index]) and (len(avatar_bone_name_array.split()[index].split("/")) > len(parent_bone.split("/"))):
+            new_child=get_avatar_bone_name (index)
+            offspring_buffer+=new_child + " "
+    return offspring_buffer
+
+def get_bone_siblings(bone_name):
+    offspring_buffer=""
+    parent_bone="unassigned"
+    #print("DEBUG - BONE NAME: " + str(bone_name))
+    for index in range(len(avatar_bone_name_array.split())):
+        if bone_name == get_avatar_bone_name(index):
+            parent_bone_index=index
+            parent_bone=avatar_bone_name_array.split()[parent_bone_index].split("/")[len(avatar_bone_name_array.split()[parent_bone_index].split("/"))-2] 
+    return get_bone_children(parent_bone)
+
+
+
+def get_bone_parent(bone_name):
+    offspring_buffer=""
+    parent_bone="unassigned"
+    #print("DEBUG - BONE NAME: " + str(bone_name))
+    for index in range(len(avatar_bone_name_array.split())):
+        if bone_name == get_avatar_bone_name(index):
+            parent_bone_index=index
+            parent_bone=avatar_bone_name_array.split()[parent_bone_index].split("/")[len(avatar_bone_name_array.split()[parent_bone_index].split("/"))-2] 
+
+    return parent_bone
+
 
 
 def draw_bone_stucture():
-    print("yeet")
+    print("****" + get_armature_name()  +"****")
+    print("ROOT: " + Fore.CYAN + get_root_bone_name() + Style.RESET_ALL)
+    margin=" "
+
+    root_children=get_bone_children(get_root_bone_name()).split()
+    for child in root_children:
+        margin=" "
+
+        sibling_buffer=""
+        print(Fore.RED + child + Style.RESET_ALL)
+        margin="----"
+        offspring_count=len(get_bone_offspring(child).split())
+        temp_offspring=get_bone_offspring(child).split()
+        temp_children=get_bone_children(child).split()     
+        written_buffer=""
+        current_child=child
+        current_sib_count=1
+        while len(written_buffer.split()) < offspring_count:
+            for i in range(offspring_count):
+                for j in range(offspring_count):
+                    if (temp_offspring[j] in temp_children) and (temp_offspring[j] not in written_buffer.split()):
+                        print("|"+margin+ "|")
+                        print(margin+"--"+Fore.GREEN + temp_offspring[j] + Style.RESET_ALL)
+                        current_child = temp_offspring[j]
+                        margin=margin+"----"
+                        written_buffer+=current_child + " "
+                        temp_children=get_bone_children(current_child).split()
+                        sibling_buffer+=str(len(get_bone_siblings(temp_offspring[j]))) + " "
+
+            #print(Fore.RED + "No More Children. Current Child: " + str(current_child)+Style.RESET_ALL)
+            #print(str(current_sib_count) + " < " + str(len(get_bone_siblings(current_child).split())))
+            #print("Written: " +str(len(written_buffer.split())) + " <  " + str(offspring_count))
+            if current_sib_count < len(get_bone_siblings(current_child).split()):
+                current_child = get_bone_siblings(current_child).split()[current_sib_count]
+                temp_children=get_bone_children(current_child).split()
+                current_sib_count+=1
+                if current_child not in written_buffer.split():
+                    margin=margin[:-3]
+                    print(margin+ "|")
+                    print(margin+"--"+Fore.YELLOW + current_child + Style.RESET_ALL)
+                    margin=margin+"----"
+                    written_buffer+=current_child + " "
+                #print("TESTING: " + str(current_child))
+                #print("TESTING CHILDREN: " + str(temp_children))
+            elif current_sib_count==len(get_bone_siblings(current_child).split()):
+
+                current_child=get_bone_parent(current_child)
+                temp_children=get_bone_children(current_child).split()
+                #print("GOING UP " + str(current_child))
+                current_sib_count=0
+                margin=margin[:-8]
 
 
 
+def get_root_bone_name():
+    for index in range(len(avatar_bone_name_hash_array)):
+        if int(root_bone_name_hash) == int(avatar_bone_name_hash_array[index]):
+            return get_avatar_bone_name(index)
 
 
-
-
+def get_armature_name():
+    for index in range(len(avatar_bone_name_hash_array)):
+        if int(root_bone_name_hash) == int(avatar_bone_name_hash_array[index]):
+            return avatar_bone_name_array.split()[index].split("/")[0]
 
 
 def get_hash_from_index(bone_index):
@@ -1735,7 +1830,12 @@ if asset_type == "goose" or asset_type == "npc":
 
 
 
+    print("ROOT BONE: " + get_root_bone_name())
+    print("ARMATURE: " + get_armature_name())
 
+    draw_bone_stucture()
+
+    get_armature_name
     for bone_index in range(len(avatar_bone_name_hash_array)-3):
         print("TESTING: " + str(bone_index))
         #print(str(get_int_hash_from_index(bone_index)))
