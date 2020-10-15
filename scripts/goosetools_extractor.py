@@ -833,6 +833,7 @@ if (asset_type == "goose") or (asset_type == "npc"):
     avatar_collider_has_right_hand=0
     avatar_collider_has_TDoF=0
     
+    global avatar_bone_name_array
     avatar_bone_name_array=""
     avatar_bone_name_array_count=0
 
@@ -907,9 +908,11 @@ if (asset_type == "goose") or (asset_type == "npc"):
                 avatar_tos_flag=1
 
             elif ":" in line and avatar_tos_flag == 1:
-                avatar_bone_name_array+= line.split(":")[1].strip() + " "
+                if line.split(":")[1].strip() == "":
+                    avatar_bone_name_array+= "unnamed_bone "
+                else:
+                    avatar_bone_name_array+= line.split(":")[1].strip() + " "
                 avatar_bone_name_array_count+=1
-
 
 
 
@@ -923,15 +926,18 @@ if (asset_type == "goose") or (asset_type == "npc"):
 
 
 
-
+        global avatar_bone_name_hash_array
         avatar_bone_name_hash_array=np.zeros(avatar_bone_name_array_count, dtype=np.int64)
 
+        global avatar_skeleton_pose_array
         avatar_skeleton_pose_array=np.zeros((avatar_skeleton_pose_count*10), dtype=float)
+        global avatar_default_pose_array
         avatar_default_pose_array=np.zeros((avatar_default_pose_count*10), dtype=float)
-        
+        global avatar_human_root_bone_array
         avatar_human_root_bone_array=np.zeros(10, dtype=float)
-
+        global avatar_human_bone_mass_array
         avatar_human_bone_mass_array=np.zeros(avatar_human_bone_mass_array_count, dtype=float)
+        global avatar_root_motion_bone_array
         avatar_root_motion_bone_array=np.zeros(10, dtype=float)
 
         avatar_skeleton_pose_flag=0
@@ -1064,6 +1070,17 @@ print("Index Buffer Size: "+Fore.GREEN +str(len(index_buffer))+Style.RESET_ALL)
 print("Vertexs: "+Fore.GREEN +str(vertex_count)+Style.RESET_ALL)
 print("Vertex Buffer Size: "+ Fore.GREEN +str(vertex_buffer_size)+Style.RESET_ALL)
 
+if asset_type == "npc" or asset_type == "goose":
+
+    print("Avatar Name: "+Fore.GREEN + str(avatar_name)+Style.RESET_ALL)
+    print("Avatar Size: "+Fore.GREEN +str(avatar_size)+Style.RESET_ALL)
+
+    print("Avatar Skelton Pose Count: "+Fore.GREEN +str(avatar_skeleton_pose_count)+Style.RESET_ALL)
+    print("Avatar Default Pose Count: "+Fore.GREEN +str(avatar_default_pose_count)+Style.RESET_ALL)
+
+    for bone_name_index in range(len(avatar_bone_name_array.split())):
+        print("BONE " + str(bone_name_index) + " NAME: " +Fore.CYAN+avatar_bone_name_array.split()[bone_name_index]+Style.RESET_ALL)
+
 
 if asset_type == "simple":
     vertex_buffer_block_size=(vertex_buffer_size/vertex_count)
@@ -1078,8 +1095,7 @@ elif asset_type == "npc" or asset_type == "goose":
 #print("VERTEX BUFFER: "+ Fore.RED + str(vertex_buffer)+Style.RESET_ALL)
 
 
-for bone_name_index in range(len(avatar_bone_name_array.split())):
-    print(avatar_bone_name_array.split()[bone_name_index])
+
 
 
 ########################################################################################################################################
@@ -1497,7 +1513,7 @@ if asset_type == "goose" or asset_type == "npc":
     #Write Weights Here
     for vertex_index in range(vertex_count):
         for skin_weight_index in range(get_obj_vertex_weight_count(vertex_index,vertex_count,asset_type)):
-            collada_file.write(get_obj_vertex_weight(skin_weight_index,vertex_index,vertex_count,asset_type).split()[1])
+            collada_file.write(get_obj_vertex_weight(skin_weight_index,vertex_index,vertex_count,asset_type).split()[1] + " ")
        
     collada_file.write("</float_array>\n")
     collada_file.write("<technique_common>\n")
@@ -1545,7 +1561,8 @@ if asset_type == "goose" or asset_type == "npc":
             collada_file.write(str(get_obj_vertex_weight(skin_weight_index,vertex_index,vertex_count,asset_type)).split()[0] + " ")
             collada_file.write(str(global_vertex_positon_count+skin_weight_index) + " ")
         global_vertex_positon_count+=int(temp_vertex_weight_count)
-
+    
+    collada_file.write("</v>\n")
     collada_file.write("</vertex_weights>\n")
     collada_file.write("</skin>\n")
     collada_file.write("</controller>\n")
@@ -1563,11 +1580,120 @@ collada_file.write("</library_controllers>\n")
 
 
 
+def get_avatar_bone_name(bone_number):
+
+    if bone_number <= len(avatar_bone_name_array.split()):
+        chain_length=len(avatar_bone_name_array.split()[bone_number].split("/"))
+        return str(avatar_bone_name_array.split()[bone_number].split("/")[chain_length-1])
+
+    else:
+
+        print(Fore.RED + "ERROR - Bone Index "  + str(bone_number) + "out of range!" + Style.RESET_ALL)
+        return "<error>"
+
+def get_avatar_bone_id(bone_number):
+
+    if bone_number <= len(avatar_bone_name_array.split()):
+        chain_length=len(avatar_bone_name_array.split()[bone_number].split("/"))
+        return "Armature_" +str(avatar_bone_name_array.split()[bone_number].split("/")[chain_length-1])
+
+    else:
+
+        print(Fore.RED + "ERROR - Bone Index "  + str(bone_number) + "out of range!" + Style.RESET_ALL)
+        return "<error>"
+
+def get_inverse_bind_transform(bone_number):
+    
+    bind_matrix=np.zeros(shape=(4,4), dtype=float)
+
+
+    for row in range(4):
+        for col in range(4):
+            bind_matrix[row][col]=float(bind_pose_buffer.split()[bone_number*16+row+col])
+    #Calculate inverse matrix
+    
+    #print(str(bind_matrix))
+    inverse_matrix=np.linalg.inv(bind_matrix)
+
+    return inverse_matrix
+    
+
+
+
+def get_int_hash_from_index(bone_index):
+    
+
+    byte_4=bone_name_hash[bone_index*8+6]+bone_name_hash[bone_index*8+7]
+    byte_3=bone_name_hash[bone_index*8+4]+bone_name_hash[bone_index*8+5]
+    byte_2=bone_name_hash[bone_index*8+2]+bone_name_hash[bone_index*8+3]
+    byte_1=bone_name_hash[bone_index*8]+bone_name_hash[bone_index*8+1]
+    temp_bone_hash=byte_4+byte_3+byte_2+byte_1
+    #temp_bone_hash=byte_1+byte_2+byte_3+byte_4
+    #print("TEMP STRING: " + str(temp_bone_hash ))
+    #return str(struct.unpack('I', bytes.fromhex(temp_bone_hash))).strip('(),')
+    return int(temp_bone_hash,16)
+    #return int(byte_4,16)*255*255*255 + int(byte_3,16)*255*255 + int(byte_2,16)*255 + int(byte_1,16)
+
+
+def get_bone_name_from_bind_pose_index(bone_index):
+
+    temp_hash=get_int_hash_from_index(bone_index)
+    for index in range(len(avatar_bone_name_hash_array)):
+            if avatar_bone_name_hash_array[index] == temp_hash:
+                bone_name=get_avatar_bone_name(index)
+                print("Matched Bone to Bind Pose: " + Fore.CYAN + "[" + str(bone_name) + "]" + Style.RESET_ALL)
+                #return avatar_bone_name_array.split()[index]               
+                chain_length=len(avatar_bone_name_array.split()[index].split("/"))
+                return str(avatar_bone_name_array.split()[index].split("/")[chain_length-1])
+
+
+
+def get_bone_children(bone_name):
+    temp_child_buffer=""
+    parent_bone="unassigned"
+    #print("DEBUG - BONE NAME: " + str(bone_name))
+    for index in range(len(avatar_bone_name_array.split())):
+        if bone_name == get_avatar_bone_name(index):
+            parent_bone_index=index
+            parent_bone=avatar_bone_name_array.split()[parent_bone_index] 
+    #print("DEBUG - PARRENT BONE: " + str(parent_bone))
+    for index in range(len(avatar_bone_name_array.split())):
+        #print("if " + str(parent_bone) + " in " + str(avatar_bone_name_array.split()[index]) )
+        if (parent_bone in avatar_bone_name_array.split()[index]) and (len(avatar_bone_name_array.split()[index].split("/")) > len(parent_bone.split("/"))):
+            
+            new_child=str(avatar_bone_name_array.split()[index].split("/")[(len(parent_bone.split("/")))])
+            #print(Fore.GREEN + "YES" + Style.RESET_ALL  + " NEW CHILD: " + str(new_child))
+            if new_child not in temp_child_buffer:
+                    temp_child_buffer+=new_child + " "
+    return temp_child_buffer
+
+
+
+
+def draw_bone_stucture():
+    print("yeet")
 
 
 
 
 
+
+
+
+
+def get_hash_from_index(bone_index):
+    
+
+    byte_1=bone_name_hash[bone_hash+6]+bone_name_hash[bone_hash+7]
+    byte_2=bone_name_hash[bone_hash+4]+bone_name_hash[bone_hash+5]
+    byte_3=bone_name_hash[bone_hash+2]+bone_name_hash[bone_hash+3]
+    byte_4=bone_name_hash[bone_hash]+bone_name_hash[bone_hash+1]
+
+    temp_bone_hash=int(byte_1+byte_2+byte_3+byte_4,16)
+    for index in range(len(avatar_bone_name_hash_array)):
+        if temp_bone_hash == avatar_bone_name_hash_array[index]:
+            print("DEBUG - MATCH FOUND")
+            return index
 
 
 collada_visual_scene_id="Scene"
@@ -1585,40 +1711,93 @@ collada_file.write("<library_visual_scenes>\n")
 collada_file.write("<visual_scene id=\"" + str(collada_visual_scene_id) + "\" name=\"" + str(collada_visual_scene_name) +"\">\n")
 
 
-
-
-
-
-
-#########################
-# WRITE BONES
-#########################
-
-
 if asset_type == "goose" or asset_type == "npc":
+
+
+#########################
+# WRITE ROOT BONES
+#########################
+
+
+
 
     #Root Bone
     collada_file.write("<node id=\"Armature\" name=\"Armature\" type=\"NODE\">\n")
     collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 5.206488 0 0 0 1</matrix>\n")
-    collada_file.write("<node id=\"Armature_Bone\" name=\"Bone\" sid=\"Bone\" type=\"JOINT\">\n")
-    collada_file.write("<matrix sid=\"transform\">0.9964491 -0.0740106 -0.04014485 0 0.04014487 0.8367317 -0.5461397 0 0.07401059 0.5425888 0.8367316 0 0 0 0 1</matrix>\n")
+
+
+
+
+#########################
+# WRITE CHILDREN BONES
+#########################    
+
+
+
+
+
+    for bone_index in range(len(avatar_bone_name_hash_array)-3):
+        print("TESTING: " + str(bone_index))
+        #print(str(get_int_hash_from_index(bone_index)))
+        #print(str(get_bone_name_from_bind_pose_index(bone_index)))
+        print("CHILDREN: " + get_bone_children(str(get_bone_name_from_bind_pose_index(bone_index))))
+
+
+
+
     #All the children bones?
     for bone_index in range(collade_bone_number):
+        temp_bone_name=get_avatar_bone_name(bone_index)
+        temp_bone_id=get_avatar_bone_id(bone_index)
+        #print(get_avatar_bone_name(bone_index ))
 
-        collada_file.write("<node id=\"Armature_Bone_001\" name=\"Bone.001\" sid=\"Bone_001\" type=\"JOINT\">\n")
-        collada_file.write("<matrix sid=\"transform\">0.165655 -0.5664322 -0.8072872 0 0.5321904 -0.6378247 0.5567341 0 -0.8302599 -0.5218564 0.1957912 -5.96046e-8 0 0 0 1</matrix>\n")
-        collada_file.write("<extra>\n")
-        collada_file.write("<technique profile=\"blender\">\n")
-        collada_file.write("<layer sid=\"layer\" type=\"string\">0</layer>\n")
-        collada_file.write("<roll sid=\"roll\" type=\"float\">-0.6829612</roll>\n")
-        collada_file.write("<tip_x sid=\"tip_x\" type=\"float\">-1.817046</tip_x>\n")
-        collada_file.write("<tip_y sid=\"tip_y\" type=\"float\">-0.9937923</tip_y>\n")
-        collada_file.write("<tip_z sid=\"tip_z\" type=\"float\">-3.019416</tip_z>\n")
-        collada_file.write("</technique>\n")
-        collada_file.write("</extra>\n")
+
+        collada_file.write("<node id=\"" + str(temp_bone_id) + "\" name=\"" + str(temp_bone_name) + "\" sid=\"" + str(temp_bone_name) + "\" type=\"JOINT\">\n")
+        collada_file.write("<matrix sid=\"transform\">")
+        #Write bone transform (Inverse of Bind Transform)
+        
+        inverse_bind_transform=get_inverse_bind_transform(bone_index)
+        for row in range(4):
+            for col in range(4):
+                collada_file.write(str(inverse_bind_transform[row][col]) + " ")
+        
+        collada_file.write("</matrix>\n")
+
+        
+        #Extra blender stuff for a later time
+        #collada_file.write("<extra>\n")
+        #collada_file.write("<technique profile=\"blender\">\n")
+        #collada_file.write("<layer sid=\"layer\" type=\"string\">0</layer>\n")
+        #collada_file.write("<roll sid=\"roll\" type=\"float\">-0.6829612</roll>\n")
+        #collada_file.write("<tip_x sid=\"tip_x\" type=\"float\">-1.817046</tip_x>\n")
+        #collada_file.write("<tip_y sid=\"tip_y\" type=\"float\">-0.9937923</tip_y>\n")
+        #collada_file.write("<tip_z sid=\"tip_z\" type=\"float\">-3.019416</tip_z>\n")
+        #collada_file.write("</technique>\n")
+        #collada_file.write("</extra>\n")
+        
+
+
         collada_file.write("</node>\n")
           
 
+#########################
+# WRITE MESH NODES
+#########################
+
+
+    collada_file.write("<node id=\"Node_000000000349DD80\" name=\"Node_000000000349DD80\" type=\"NODE\">\n")
+    collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 -5.206488 0 0 0 1</matrix>\n")
+    collada_file.write("</node>\n")
+    collada_file.write("<node id=\"Node_000000000349DD80_001\" name=\"Node_000000000349DD80.001\" type=\"NODE\">\n")
+    collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 -5.206488 0 0 0 1</matrix>\n")
+    collada_file.write("</node>\n")
+    collada_file.write("<node id=\"" + str(asset_name) + "\" name=\"" + str(asset_name) + "\" type=\"NODE\">\n")
+    collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
+    collada_file.write("<instance_controller url=\"#" + str(collada_skin_id) + "\">\n")
+    
+    collada_skin_name
+
+    collada_file.write("<skeleton>#" + str(collada_skin_name) + "</skeleton>\n")
 
 
 
@@ -1654,7 +1833,17 @@ for material_num in range(1):
 
 collada_file.write("</technique_common>\n")
 collada_file.write("</bind_material>\n")
-collada_file.write("</instance_geometry>\n")
+
+if asset_type == "goose" or asset_type == "npc":
+    collada_file.write("</instance_controller>\n")
+    collada_file.write("</node>\n")
+
+elif asset_type == "simple":
+    collada_file.write("</instance_geometry>\n")
+
+
+
+
 collada_file.write("</node>\n")
 collada_file.write("</visual_scene>\n")
 collada_file.write("</library_visual_scenes>\n")
