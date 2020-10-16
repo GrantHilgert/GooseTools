@@ -1727,9 +1727,12 @@ def draw_bone_stucture():
         written_buffer=""
         current_child=child
         current_sib_count=1
+        break_loop=0
         while len(written_buffer.split()) < offspring_count:
             for i in range(offspring_count):
                 for j in range(offspring_count):
+                    
+
                     if (temp_offspring[j] in temp_children) and (temp_offspring[j] not in written_buffer.split()):
                         print("|"+margin+ "|")
                         print(margin+"--"+Fore.GREEN + temp_offspring[j] + Style.RESET_ALL)
@@ -1737,30 +1740,51 @@ def draw_bone_stucture():
                         margin=margin+"----"
                         written_buffer+=current_child + " "
                         temp_children=get_bone_children(current_child).split()
-                        sibling_buffer+=str(len(get_bone_siblings(temp_offspring[j]))) + " "
+                        #sibling_buffer+=str(len(get_bone_siblings(temp_offspring[j]))) + " "
 
+
+            for sibling_name in get_bone_siblings(current_child).split():
+                if sibling_name not in written_buffer and break_loop == 0:
+                    current_child=sibling_name
+                    margin=margin[:-4]
+                    print("|"+margin+ "|")
+                    print(margin+"--"+Fore.CYAN + current_child + Style.RESET_ALL)
+                    margin=margin+"----"
+                    written_buffer+=current_child + " "
+                    temp_children=get_bone_children(current_child).split()
+                    break_loop=1
+            if break_loop==0:
+                margin=margin[:-4]
+                current_child=get_bone_parent(current_child)
+                temp_children=get_bone_children(current_child).split()
+
+            break_loop=0
+
+
+
+            #if current_child
             #print(Fore.RED + "No More Children. Current Child: " + str(current_child)+Style.RESET_ALL)
             #print(str(current_sib_count) + " < " + str(len(get_bone_siblings(current_child).split())))
             #print("Written: " +str(len(written_buffer.split())) + " <  " + str(offspring_count))
-            if current_sib_count < len(get_bone_siblings(current_child).split()):
-                current_child = get_bone_siblings(current_child).split()[current_sib_count]
-                temp_children=get_bone_children(current_child).split()
-                current_sib_count+=1
-                if current_child not in written_buffer.split():
-                    margin=margin[:-3]
-                    print(margin+ "|")
-                    print(margin+"--"+Fore.YELLOW + current_child + Style.RESET_ALL)
-                    margin=margin+"----"
-                    written_buffer+=current_child + " "
+            #if current_sib_count < len(get_bone_siblings(current_child).split()):
+                #current_child = get_bone_siblings(current_child).split()[current_sib_count]
+                #temp_children=get_bone_children(current_child).split()
+                #current_sib_count+=1
+                #if current_child not in written_buffer.split():
+                    #margin=margin[:-3]
+                    #print(margin+ "|")
+                    #print(margin+"--"+Fore.YELLOW + current_child + Style.RESET_ALL)
+                    #margin=margin+"----"
+                    #written_buffer+=current_child + " "
                 #print("TESTING: " + str(current_child))
                 #print("TESTING CHILDREN: " + str(temp_children))
-            elif current_sib_count==len(get_bone_siblings(current_child).split()):
+            #elif current_sib_count==len(get_bone_siblings(current_child).split()):
 
-                current_child=get_bone_parent(current_child)
-                temp_children=get_bone_children(current_child).split()
+                #current_child=get_bone_parent(current_child)
+                #temp_children=get_bone_children(current_child).split()
                 #print("GOING UP " + str(current_child))
-                current_sib_count=0
-                margin=margin[:-8]
+                #current_sib_count=0
+                #margin=margin[:-8]
 
 
 
