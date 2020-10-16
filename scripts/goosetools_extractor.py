@@ -64,14 +64,14 @@ today = date.today()
 # long 3: RED + GREEN + BLUE + "FF"
 
 #Block 3
-# long 1: Unknown
-# long 2: Unknown
-# long 3: Unknown
-# long 4: Unknown
-# long 5: Unknown
-# long 6: Unknown
-# long 7: Unknown
-# long 8: Unknown
+# long 1: BONE 1 WEIGHT
+# long 2: BONE 2 WEIGHT
+# long 3: BONE 3 WEIGHT
+# long 4: BONE 4 WEIGHT
+# long 5: BONE 1 INDEX
+# long 6: BONE 2 INDEX
+# long 7: BONE 3 INDEX
+# long 8: BONE 4 INDEX
 
 
 
@@ -637,6 +637,77 @@ def get_simple_obj_color_hex(vertex_number,vertex_buffer_size):
 
 
 
+
+
+
+
+
+
+def get_avatar_bone_name(bone_number):
+
+    if bone_number <= len(avatar_bone_name_array.split()):
+        chain_length=len(avatar_bone_name_array.split()[bone_number].split("/"))
+        return str(avatar_bone_name_array.split()[bone_number].split("/")[chain_length-1])
+
+    else:
+
+        print(Fore.RED + "ERROR - Bone Index "  + str(bone_number) + "out of range!" + Style.RESET_ALL)
+        return "<error>"
+
+def get_avatar_bone_id(bone_number):
+
+    if bone_number <= len(avatar_bone_name_array.split()):
+        chain_length=len(avatar_bone_name_array.split()[bone_number].split("/"))
+        return "Armature_" +str(avatar_bone_name_array.split()[bone_number].split("/")[chain_length-1])
+
+    else:
+
+        print(Fore.RED + "ERROR - Bone Index "  + str(bone_number) + "out of range!" + Style.RESET_ALL)
+        return "<error>"
+
+def get_inverse_bind_transform(bone_number):
+    
+    bind_matrix=np.zeros(shape=(4,4), dtype=float)
+
+
+    for row in range(4):
+        for col in range(4):
+            bind_matrix[row][col]=float(bind_pose_buffer.split()[bone_number*16+row+col])
+    #Calculate inverse matrix
+    
+    #print(str(bind_matrix))
+    inverse_matrix=np.linalg.inv(bind_matrix)
+
+    return inverse_matrix
+    
+
+
+
+def get_int_hash_from_index(bone_index):
+    
+
+    byte_4=bone_name_hash[bone_index*8+6]+bone_name_hash[bone_index*8+7]
+    byte_3=bone_name_hash[bone_index*8+4]+bone_name_hash[bone_index*8+5]
+    byte_2=bone_name_hash[bone_index*8+2]+bone_name_hash[bone_index*8+3]
+    byte_1=bone_name_hash[bone_index*8]+bone_name_hash[bone_index*8+1]
+    temp_bone_hash=byte_4+byte_3+byte_2+byte_1
+    #temp_bone_hash=byte_1+byte_2+byte_3+byte_4
+    #print("TEMP STRING: " + str(temp_bone_hash ))
+    #return str(struct.unpack('I', bytes.fromhex(temp_bone_hash))).strip('(),')
+    return int(temp_bone_hash,16)
+    #return int(byte_4,16)*255*255*255 + int(byte_3,16)*255*255 + int(byte_2,16)*255 + int(byte_1,16)
+
+
+def get_bone_name_from_bind_pose_index(bone_index):
+
+    temp_hash=get_int_hash_from_index(bone_index)
+    for index in range(len(avatar_bone_name_hash_array)):
+            if avatar_bone_name_hash_array[index] == temp_hash:
+                bone_name=get_avatar_bone_name(index)
+                #print("Matched Bone to Bind Pose: " + Fore.CYAN + "[" + str(bone_name) + "]" + Style.RESET_ALL)
+                #return avatar_bone_name_array.split()[index]               
+                chain_length=len(avatar_bone_name_array.split()[index].split("/"))
+                return str(avatar_bone_name_array.split()[index].split("/")[chain_length-1])
 
 
 
@@ -1451,13 +1522,15 @@ if asset_type == "goose" or asset_type == "npc":
     #########################
     collada_file.write("<controller id=\"" + str(collada_skin_id) + "\" name=\"" + str(collada_skin_name) + "\">\n")
     collada_file.write("<skin source=\"#" + str(collada_skin_source) + "\">\n")
-    collada_file.write("<bind_shape_matrix>1 0 0 0 0 1 0 0 0 0 1 -5.206488 0 0 0 1</bind_shape_matrix>\n")
+    collada_file.write("<bind_shape_matrix>1 0 0 0 0 1 0 0 0 0 1 1 0 0 0 1</bind_shape_matrix>\n")
     collada_file.write("<source id=\"" + str(collada_skin_joints_id) + "\">\n")
     collada_file.write("<Name_array id=\"" + str(collada_skin_joints_array_name) + "\" count=\"" + str(int(collade_bone_name_array_count)) + "\"> ")
 
     #Bone name placeholder
     #collada_file.write("Bone Bone_001 Bone_002 Bone_003 Bone_004 Bone_016 Bone_010 Bone_011 Bone_012 Bone_014 Bone_015 Bone_018 Bone_019 Bone_020 Bone_022 Bone_023 Bone_024 Bone_032 Bone_026 Bone_027 Bone_028 Bone_030 Bone_031 Bone_034 Bone_035 Bone_036 Bone_038 Bone_039 Bone_040 Bone_051 Bone_050 Bone_049 Bone_048 Bone_047 Bone_005 Bone_007 Bone_013 Bone_017 Bone_021 Bone_025 Bone_029 Bone_033 Bone_037 Bone_054 Bone_055 Bone_053 Bone_052")
-    collada_file.write(get_bone_name_buffer(collade_bone_number))
+    
+    for index in range(collade_bone_number):
+        collada_file.write(get_bone_name_from_bind_pose_index(index) + " ")
     collada_file.write("</Name_array>\n")
     
     collada_file.write("<technique_common>\n")
@@ -1580,71 +1653,7 @@ collada_file.write("</library_controllers>\n")
 
 
 
-def get_avatar_bone_name(bone_number):
 
-    if bone_number <= len(avatar_bone_name_array.split()):
-        chain_length=len(avatar_bone_name_array.split()[bone_number].split("/"))
-        return str(avatar_bone_name_array.split()[bone_number].split("/")[chain_length-1])
-
-    else:
-
-        print(Fore.RED + "ERROR - Bone Index "  + str(bone_number) + "out of range!" + Style.RESET_ALL)
-        return "<error>"
-
-def get_avatar_bone_id(bone_number):
-
-    if bone_number <= len(avatar_bone_name_array.split()):
-        chain_length=len(avatar_bone_name_array.split()[bone_number].split("/"))
-        return "Armature_" +str(avatar_bone_name_array.split()[bone_number].split("/")[chain_length-1])
-
-    else:
-
-        print(Fore.RED + "ERROR - Bone Index "  + str(bone_number) + "out of range!" + Style.RESET_ALL)
-        return "<error>"
-
-def get_inverse_bind_transform(bone_number):
-    
-    bind_matrix=np.zeros(shape=(4,4), dtype=float)
-
-
-    for row in range(4):
-        for col in range(4):
-            bind_matrix[row][col]=float(bind_pose_buffer.split()[bone_number*16+row+col])
-    #Calculate inverse matrix
-    
-    #print(str(bind_matrix))
-    inverse_matrix=np.linalg.inv(bind_matrix)
-
-    return inverse_matrix
-    
-
-
-
-def get_int_hash_from_index(bone_index):
-    
-
-    byte_4=bone_name_hash[bone_index*8+6]+bone_name_hash[bone_index*8+7]
-    byte_3=bone_name_hash[bone_index*8+4]+bone_name_hash[bone_index*8+5]
-    byte_2=bone_name_hash[bone_index*8+2]+bone_name_hash[bone_index*8+3]
-    byte_1=bone_name_hash[bone_index*8]+bone_name_hash[bone_index*8+1]
-    temp_bone_hash=byte_4+byte_3+byte_2+byte_1
-    #temp_bone_hash=byte_1+byte_2+byte_3+byte_4
-    #print("TEMP STRING: " + str(temp_bone_hash ))
-    #return str(struct.unpack('I', bytes.fromhex(temp_bone_hash))).strip('(),')
-    return int(temp_bone_hash,16)
-    #return int(byte_4,16)*255*255*255 + int(byte_3,16)*255*255 + int(byte_2,16)*255 + int(byte_1,16)
-
-
-def get_bone_name_from_bind_pose_index(bone_index):
-
-    temp_hash=get_int_hash_from_index(bone_index)
-    for index in range(len(avatar_bone_name_hash_array)):
-            if avatar_bone_name_hash_array[index] == temp_hash:
-                bone_name=get_avatar_bone_name(index)
-                print("Matched Bone to Bind Pose: " + Fore.CYAN + "[" + str(bone_name) + "]" + Style.RESET_ALL)
-                #return avatar_bone_name_array.split()[index]               
-                chain_length=len(avatar_bone_name_array.split()[index].split("/"))
-                return str(avatar_bone_name_array.split()[index].split("/")[chain_length-1])
 
 
 
@@ -1711,15 +1720,17 @@ def get_bone_parent(bone_name):
 
 def draw_bone_stucture():
     print("****" + get_armature_name()  +"****")
-    print("ROOT: " + Fore.CYAN + get_root_bone_name() + Style.RESET_ALL)
+    print("ROOT: " + Fore.RED + get_root_bone_name() + Style.RESET_ALL)
     margin=" "
-
+    level=0
     root_children=get_bone_children(get_root_bone_name()).split()
     for child in root_children:
         margin=" "
 
         sibling_buffer=""
-        print(Fore.RED + child + Style.RESET_ALL)
+        level=0
+        print(Fore.CYAN + child + Style.RESET_ALL + "[" + str(level)+"]")
+        level+=1
         margin="----"
         offspring_count=len(get_bone_offspring(child).split())
         temp_offspring=get_bone_offspring(child).split()
@@ -1734,12 +1745,20 @@ def draw_bone_stucture():
                     
 
                     if (temp_offspring[j] in temp_children) and (temp_offspring[j] not in written_buffer.split()):
-                        print("|"+margin+ "|")
-                        print(margin+"--"+Fore.GREEN + temp_offspring[j] + Style.RESET_ALL)
+                        #print("|"+margin+ "|")
+                        
+                        if len(get_bone_siblings(temp_offspring[j]).split()) > 1:
+                            bone_color=Fore.YELLOW
+                        else:
+                            bone_color=Fore.GREEN
+                        print(margin+"--"+bone_color + temp_offspring[j] + Style.RESET_ALL + "[" + str(level)+"]")
+                        if len(get_bone_children(temp_offspring[j])) > 0:
+                            level+=1
                         current_child = temp_offspring[j]
                         margin=margin+"----"
                         written_buffer+=current_child + " "
                         temp_children=get_bone_children(current_child).split()
+
                         #sibling_buffer+=str(len(get_bone_siblings(temp_offspring[j]))) + " "
 
 
@@ -1747,8 +1766,14 @@ def draw_bone_stucture():
                 if sibling_name not in written_buffer and break_loop == 0:
                     current_child=sibling_name
                     margin=margin[:-4]
-                    print("|"+margin+ "|")
-                    print(margin+"--"+Fore.CYAN + current_child + Style.RESET_ALL)
+                    #print("|"+margin+ "|")
+                    if len(get_bone_siblings(current_child).split()) > 1:
+                        bone_color=Fore.YELLOW
+                    else:
+                            bone_color=Fore.GREEN
+                    print(margin+"--"+bone_color + current_child + Style.RESET_ALL + "[" + str(level)+"]")
+                    if len(get_bone_children(current_child)) > 0:
+                        level+=1
                     margin=margin+"----"
                     written_buffer+=current_child + " "
                     temp_children=get_bone_children(current_child).split()
@@ -1757,34 +1782,179 @@ def draw_bone_stucture():
                 margin=margin[:-4]
                 current_child=get_bone_parent(current_child)
                 temp_children=get_bone_children(current_child).split()
+                level-=1
 
             break_loop=0
 
 
+def get_bone_stucture_buffer():
+    level=0
+    temp_buffer=get_root_bone_name() + " " + str(level) + " @ "
+    root_children=get_bone_children(get_root_bone_name()).split()
+    for child in root_children:
+        level=1
+        temp_buffer+=child + " " + str(level) + " @ "
+        level+=1
 
-            #if current_child
-            #print(Fore.RED + "No More Children. Current Child: " + str(current_child)+Style.RESET_ALL)
-            #print(str(current_sib_count) + " < " + str(len(get_bone_siblings(current_child).split())))
-            #print("Written: " +str(len(written_buffer.split())) + " <  " + str(offspring_count))
-            #if current_sib_count < len(get_bone_siblings(current_child).split()):
-                #current_child = get_bone_siblings(current_child).split()[current_sib_count]
-                #temp_children=get_bone_children(current_child).split()
-                #current_sib_count+=1
-                #if current_child not in written_buffer.split():
-                    #margin=margin[:-3]
-                    #print(margin+ "|")
-                    #print(margin+"--"+Fore.YELLOW + current_child + Style.RESET_ALL)
-                    #margin=margin+"----"
-                    #written_buffer+=current_child + " "
-                #print("TESTING: " + str(current_child))
-                #print("TESTING CHILDREN: " + str(temp_children))
-            #elif current_sib_count==len(get_bone_siblings(current_child).split()):
+        offspring_count=len(get_bone_offspring(child).split())
+        temp_offspring=get_bone_offspring(child).split()
+        temp_children=get_bone_children(child).split()     
+        written_buffer=""
+        current_child=child
 
-                #current_child=get_bone_parent(current_child)
-                #temp_children=get_bone_children(current_child).split()
-                #print("GOING UP " + str(current_child))
-                #current_sib_count=0
-                #margin=margin[:-8]
+        break_loop=0
+        while len(written_buffer.split()) < offspring_count:
+            for i in range(offspring_count):
+                for j in range(offspring_count):
+                    
+
+                    if (temp_offspring[j] in temp_children) and (temp_offspring[j] not in written_buffer.split()):
+                        
+                        if len(get_bone_siblings(temp_offspring[j]).split()) > 1:
+                            bone_color=Fore.YELLOW
+                        else:
+                            bone_color=Fore.GREEN
+                        
+                        temp_buffer+=temp_offspring[j] + " " + str(level) + " @ "
+                        
+                        if len(get_bone_children(temp_offspring[j])) > 0:
+                            level+=1
+                        current_child = temp_offspring[j]
+
+                        written_buffer+=current_child + " "
+                        temp_children=get_bone_children(current_child).split()
+
+
+            for sibling_name in get_bone_siblings(current_child).split():
+                if sibling_name not in written_buffer and break_loop == 0:
+                    current_child=sibling_name
+                    if len(get_bone_siblings(current_child).split()) > 1:
+                        bone_color=Fore.YELLOW
+                    else:
+                            bone_color=Fore.GREEN
+                    temp_buffer+=current_child + " " + str(level) + " @ "
+                    if len(get_bone_children(current_child)) > 0:
+                        level+=1
+
+                    written_buffer+=current_child + " "
+                    temp_children=get_bone_children(current_child).split()
+                    break_loop=1
+            if break_loop==0:
+
+                current_child=get_bone_parent(current_child)
+                temp_children=get_bone_children(current_child).split()
+                level-=1
+
+            break_loop=0
+
+    return temp_buffer
+
+
+
+
+
+def write_bone_structure(dae_file):
+    
+    bone_structure_buffer=get_bone_stucture_buffer()
+    print(bone_structure_buffer)
+    bind_pose_index=0
+    #Armature
+    armature_name=get_armature_name()
+    dae_file.write("<node id=\""+str(armature_name)+"\" name=\""+str(armature_name)+"\" type=\"NODE\">\n")
+    #dae_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 1 0 0 0 1</matrix>\n")
+
+
+
+    #Root Bone
+    root_bone_name=get_root_bone_name()
+    if get_bone_name_from_bind_pose_index(bind_pose_index) == str(root_bone_name):
+        print("Writing Root Bone: " + Fore.CYAN + "[" + str(root_bone_name) + "]" + Style.RESET_ALL)
+    else:
+        print("ERROR - Bind Pose Doesnt Match Root Bone" + Fore.RED + "[FAIL]" + Style.RESET_ALL)  
+          
+    dae_file.write("<node id=\""+str(root_bone_name)+"\" name=\""+str(root_bone_name)+"\" type=\"JOINT\">\n")
+    dae_file.write("<matrix sid=\"transform\">")
+    inverse_bind_transform=get_inverse_bind_transform(0)
+    for row in range(4):
+        for col in range(4):
+            dae_file.write(str(inverse_bind_transform[row][col]) + " ")
+    dae_file.write("</matrix>\n")
+
+    bind_pose_index+=1
+    close_node_count=0
+    #get_bone_name_from_bind_pose_index(bind_pose_index)
+
+
+    for i in range(bind_pos_matrix_count-1):
+        for j in range(len(bone_structure_buffer.split("@"))-1):
+            temp_bone_name=get_bone_name_from_bind_pose_index(i+1)
+            if bone_structure_buffer.split("@")[j].split()[0].strip() == temp_bone_name:
+                print("Writing Bone: " + Fore.CYAN + "[" + str(temp_bone_name) + "]" + Style.RESET_ALL)
+                dae_file.write("<node id=\"" + str(temp_bone_name) + "\" name=\"" + str(temp_bone_name) + "\" sid=\"" + str(temp_bone_name) + "\" type=\"JOINT\">\n")
+                dae_file.write("<matrix sid=\"transform\">")
+                #Write bone transform (Inverse of Bind Transform)     
+                inverse_bind_transform=get_inverse_bind_transform(i+1)
+                for row in range(4):
+                    for col in range(4):
+                        dae_file.write(str(inverse_bind_transform[row][col]) + " ")
+
+                dae_file.write("</matrix>\n")
+                for bi in range(len(bone_structure_buffer.split("@"))-1):
+                    if bone_structure_buffer.split("@")[bi].split()[0] == get_bone_name_from_bind_pose_index(i+1):
+                        current_pos=int(bone_structure_buffer.split("@")[bi].split()[1])
+                        #print("DEBUG - " +str(bone_structure_buffer.split("@")[bi].split()[0])+" CURRENT POSITION: " + str(current_pos))  
+                    if ((i+2) < len(bone_structure_buffer.split("@"))-1) and bone_structure_buffer.split("@")[bi].split()[0] == get_bone_name_from_bind_pose_index(i+2):
+                        
+                        next_pos=int(bone_structure_buffer.split("@")[bi].split()[1])
+                        #print("DEBUG - " +str(bone_structure_buffer.split("@")[bi].split()[0])+" NEXT POSITION: " + str(next_pos))            
+                    elif ((i+2) > len(bone_structure_buffer.split("@"))-1):
+                        next_pos=0
+
+                    #Extra blender stuff for a later time
+                    #dae_file.write("<extra>\n")
+                    #dae_file.write("<technique profile=\"blender\">\n")
+                    #dae_file.write("<layer sid=\"layer\" type=\"string\">0</layer>\n")
+                    #dae_file.write("<roll sid=\"roll\" type=\"float\">-0.6829612</roll>\n")
+                    #dae_file.write("<tip_x sid=\"tip_x\" type=\"float\">-1.817046</tip_x>\n")
+                    #dae_file.write("<tip_y sid=\"tip_y\" type=\"float\">-0.9937923</tip_y>\n")
+                    #dae_file.write("<tip_z sid=\"tip_z\" type=\"float\">-3.019416</tip_z>\n")
+                    #dae_file.write("</technique>\n")
+                    #dae_file.write("</extra>\n")
+
+
+
+
+
+                #Close node if next bone is sibling
+                if current_pos == next_pos:
+                    dae_file.write("</node>\n")
+                #dont close if child.      
+                #elif next_pos > current_pos:
+                    #close_node_count+=1
+
+                elif next_pos < current_pos:
+                    for close_count in range(int(current_pos) - int(next_pos) + 1):
+                        dae_file.write("</node>\n")
+
+
+        #else:
+            #print("ERROR - Bind Pose Name Doesnt Match" + Fore.RED + "[FAIL]" + Style.RESET_ALL)
+
+
+
+
+        
+
+        
+
+
+    dae_file.write("</node>\n")
+    dae_file.write("</node>\n")
+
+
+
+
+
 
 
 
@@ -1840,9 +2010,7 @@ if asset_type == "goose" or asset_type == "npc":
 
 
 
-    #Root Bone
-    collada_file.write("<node id=\"Armature\" name=\"Armature\" type=\"NODE\">\n")
-    collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 5.206488 0 0 0 1</matrix>\n")
+
 
 
 
@@ -1854,54 +2022,8 @@ if asset_type == "goose" or asset_type == "npc":
 
 
 
-    print("ROOT BONE: " + get_root_bone_name())
-    print("ARMATURE: " + get_armature_name())
-
     draw_bone_stucture()
-
-    get_armature_name
-    for bone_index in range(len(avatar_bone_name_hash_array)-3):
-        print("TESTING: " + str(bone_index))
-        #print(str(get_int_hash_from_index(bone_index)))
-        #print(str(get_bone_name_from_bind_pose_index(bone_index)))
-        print("CHILDREN: " + get_bone_children(str(get_bone_name_from_bind_pose_index(bone_index))))
-
-
-
-
-    #All the children bones?
-    for bone_index in range(collade_bone_number):
-        temp_bone_name=get_avatar_bone_name(bone_index)
-        temp_bone_id=get_avatar_bone_id(bone_index)
-        #print(get_avatar_bone_name(bone_index ))
-
-
-        collada_file.write("<node id=\"" + str(temp_bone_id) + "\" name=\"" + str(temp_bone_name) + "\" sid=\"" + str(temp_bone_name) + "\" type=\"JOINT\">\n")
-        collada_file.write("<matrix sid=\"transform\">")
-        #Write bone transform (Inverse of Bind Transform)
-        
-        inverse_bind_transform=get_inverse_bind_transform(bone_index)
-        for row in range(4):
-            for col in range(4):
-                collada_file.write(str(inverse_bind_transform[row][col]) + " ")
-        
-        collada_file.write("</matrix>\n")
-
-        
-        #Extra blender stuff for a later time
-        #collada_file.write("<extra>\n")
-        #collada_file.write("<technique profile=\"blender\">\n")
-        #collada_file.write("<layer sid=\"layer\" type=\"string\">0</layer>\n")
-        #collada_file.write("<roll sid=\"roll\" type=\"float\">-0.6829612</roll>\n")
-        #collada_file.write("<tip_x sid=\"tip_x\" type=\"float\">-1.817046</tip_x>\n")
-        #collada_file.write("<tip_y sid=\"tip_y\" type=\"float\">-0.9937923</tip_y>\n")
-        #collada_file.write("<tip_z sid=\"tip_z\" type=\"float\">-3.019416</tip_z>\n")
-        #collada_file.write("</technique>\n")
-        #collada_file.write("</extra>\n")
-        
-
-
-        collada_file.write("</node>\n")
+    write_bone_structure(collada_file)
           
 
 #########################
