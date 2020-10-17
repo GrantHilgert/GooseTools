@@ -1522,7 +1522,7 @@ if asset_type == "goose" or asset_type == "npc":
     #########################
     collada_file.write("<controller id=\"" + str(collada_skin_id) + "\" name=\"" + str(collada_skin_name) + "\">\n")
     collada_file.write("<skin source=\"#" + str(collada_skin_source) + "\">\n")
-    collada_file.write("<bind_shape_matrix>1 0 0 0 0 1 0 0 0 0 1 1 0 0 0 1</bind_shape_matrix>\n")
+    collada_file.write("<bind_shape_matrix>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</bind_shape_matrix>\n")
     collada_file.write("<source id=\"" + str(collada_skin_joints_id) + "\">\n")
     collada_file.write("<Name_array id=\"" + str(collada_skin_joints_array_name) + "\" count=\"" + str(int(collade_bone_name_array_count)) + "\"> ")
 
@@ -1631,7 +1631,7 @@ if asset_type == "goose" or asset_type == "npc":
         #collada_file.write(str(temp_vertex_weight_count) +" ")
         for skin_weight_index in range(temp_vertex_weight_count):
             #print("DEBUG- TEMP VERTEX WEIGHT: " + str(temp_vertex_weight_count) + " : "  + str(skin_weight_index))         
-            collada_file.write(str(get_obj_vertex_weight(skin_weight_index,vertex_index,vertex_count,asset_type)).split()[0] + " ")
+            collada_file.write(str(int(str((get_obj_vertex_weight(skin_weight_index,vertex_index,vertex_count,asset_type)).split()[0]))-1) + " ")
             collada_file.write(str(global_vertex_positon_count+skin_weight_index) + " ")
         global_vertex_positon_count+=int(temp_vertex_weight_count)
     
@@ -1861,7 +1861,7 @@ def write_bone_structure(dae_file):
     #Armature
     armature_name=get_armature_name()
     dae_file.write("<node id=\""+str(armature_name)+"\" name=\""+str(armature_name)+"\" type=\"NODE\">\n")
-    dae_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 1 0 0 0 1</matrix>\n")
+    dae_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
 
 
 
@@ -1872,7 +1872,7 @@ def write_bone_structure(dae_file):
     else:
         print("ERROR - Bind Pose Doesnt Match Root Bone" + Fore.RED + "[FAIL]" + Style.RESET_ALL)  
           
-    dae_file.write("<node id=\""+str(root_bone_name)+"\" name=\""+str(root_bone_name)+"\" type=\"JOINT\">\n")
+    dae_file.write("<node id=\""+str(root_bone_name)+"\" name=\""+str(root_bone_name)+ "\" sid=\"" + str(root_bone_name) + "\" type=\"JOINT\">\n")
     dae_file.write("<matrix sid=\"transform\">")
     inverse_bind_transform=get_inverse_bind_transform(0)
     for row in range(4):
@@ -1926,17 +1926,19 @@ def write_bone_structure(dae_file):
 
 
                 #Close node if next bone is sibling
-                if current_pos == next_pos:
+                if current_pos == next_pos and (i != (bind_pos_matrix_count-1)):
                     dae_file.write("</node>\n")
                 #dont close if child.      
                 #elif next_pos > current_pos:
                     #close_node_count+=1
 
-                elif next_pos < current_pos:
+                elif next_pos < current_pos and (i != (bind_pos_matrix_count-2)):
                     for close_count in range(int(current_pos) - int(next_pos) + 1):
                         dae_file.write("</node>\n")
 
-
+                elif next_pos < current_pos and (i == (bind_pos_matrix_count-2)):
+                    for close_count in range(int(current_pos) - int(next_pos)):
+                        dae_file.write("</node>\n")
         #else:
             #print("ERROR - Bind Pose Name Doesnt Match" + Fore.RED + "[FAIL]" + Style.RESET_ALL)
 
@@ -2031,12 +2033,12 @@ if asset_type == "goose" or asset_type == "npc":
 #########################
 
 
-    collada_file.write("<node id=\"Node_000000000349DD80\" name=\"Node_000000000349DD80\" type=\"NODE\">\n")
-    collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 -5.206488 0 0 0 1</matrix>\n")
-    collada_file.write("</node>\n")
-    collada_file.write("<node id=\"Node_000000000349DD80_001\" name=\"Node_000000000349DD80.001\" type=\"NODE\">\n")
-    collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 -5.206488 0 0 0 1</matrix>\n")
-    collada_file.write("</node>\n")
+    #collada_file.write("<node id=\"Node_000000000349DD80\" name=\"Node_000000000349DD80\" type=\"NODE\">\n")
+    #collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
+    #collada_file.write("</node>\n")
+    #collada_file.write("<node id=\"Node_000000000349DD80_001\" name=\"Node_000000000349DD80.001\" type=\"NODE\">\n")
+    #collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
+    #collada_file.write("</node>\n")
     collada_file.write("<node id=\"" + str(asset_name) + "\" name=\"" + str(asset_name) + "\" type=\"NODE\">\n")
     collada_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>\n")
     collada_file.write("<instance_controller url=\"#" + str(collada_skin_id) + "\">\n")
