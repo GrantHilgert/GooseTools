@@ -1723,7 +1723,7 @@ def draw_bone_stucture():
     print("ROOT: " + Fore.RED + get_root_bone_name() + Style.RESET_ALL)
     margin=" "
     level=0
-    root_children=get_bone_children(get_root_bone_name()).split()
+    root_children=get_bone_children(get_armature_name()).split()
     for child in root_children:
         margin=" "
 
@@ -1790,7 +1790,7 @@ def draw_bone_stucture():
 def get_bone_stucture_buffer():
     level=0
     temp_buffer=get_root_bone_name() + " " + str(level) + " @ "
-    root_children=get_bone_children(get_root_bone_name()).split()
+    root_children=get_bone_children(get_armature_name()).split()
     for child in root_children:
         level=1
         temp_buffer+=child + " " + str(level) + " @ "
@@ -1861,7 +1861,7 @@ def write_bone_structure(dae_file):
     #Armature
     armature_name=get_armature_name()
     dae_file.write("<node id=\""+str(armature_name)+"\" name=\""+str(armature_name)+"\" type=\"NODE\">\n")
-    #dae_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 1 0 0 0 1</matrix>\n")
+    dae_file.write("<matrix sid=\"transform\">1 0 0 0 0 1 0 0 0 0 1 1 0 0 0 1</matrix>\n")
 
 
 
@@ -1903,11 +1903,11 @@ def write_bone_structure(dae_file):
                     if bone_structure_buffer.split("@")[bi].split()[0] == get_bone_name_from_bind_pose_index(i+1):
                         current_pos=int(bone_structure_buffer.split("@")[bi].split()[1])
                         #print("DEBUG - " +str(bone_structure_buffer.split("@")[bi].split()[0])+" CURRENT POSITION: " + str(current_pos))  
-                    if ((i+2) < len(bone_structure_buffer.split("@"))-1) and bone_structure_buffer.split("@")[bi].split()[0] == get_bone_name_from_bind_pose_index(i+2):
+                    if ((i+2) < bind_pos_matrix_count-1) and bone_structure_buffer.split("@")[bi].split()[0] == get_bone_name_from_bind_pose_index(i+2):
                         
                         next_pos=int(bone_structure_buffer.split("@")[bi].split()[1])
                         #print("DEBUG - " +str(bone_structure_buffer.split("@")[bi].split()[0])+" NEXT POSITION: " + str(next_pos))            
-                    elif ((i+2) > len(bone_structure_buffer.split("@"))-1):
+                    elif ((i+2) > bind_pos_matrix_count-1):
                         next_pos=0
 
                     #Extra blender stuff for a later time
@@ -1948,8 +1948,8 @@ def write_bone_structure(dae_file):
         
 
 
-    dae_file.write("</node>\n")
-    dae_file.write("</node>\n")
+    #dae_file.write("</node>\n")
+    #dae_file.write("</node>\n")
 
 
 
