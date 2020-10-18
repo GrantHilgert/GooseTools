@@ -396,7 +396,7 @@ new_asset_file.write("  serializedVersion: 9\n")
 new_asset_file.write("  m_SubMeshes:\n")
 new_asset_file.write("  - serializedVersion: 2\n")
 new_asset_file.write("    firstByte: 0\n")
-new_asset_file.write("    indexCount: "+str(index_count)+"\n")
+new_asset_file.write("    indexCount: "+str(face_buffer_size*3)+"\n")
 new_asset_file.write("    topology: 0\n")
 new_asset_file.write("    baseVertex: 0\n")
 new_asset_file.write("    firstVertex: 0\n")
@@ -419,13 +419,13 @@ for index in range(int(bind_pose_buffer_size/16)):
     for i in range(4):
         for j in range(4):
             e_value=bind_pose_buffer[index*16+i*4+j]
-            if (e_value == 1) or (e_value == 0):
+            if (e_value == 1) or (e_value == 0) or (e_value == -1):
                 e_value=int(e_value)
 
             if (i == 0) and (j == 0):
-                new_asset_file.write("  - e" + str(i) + str(j) + ": " + str(e_value)+"\n")
+                new_asset_file.write("  - e" + str(i) + str(j) + ": " + str(e_value).upper()+"\n")
             else:
-                new_asset_file.write("    e" + str(i) + str(j) + ": " + str(e_value)+"\n")
+                new_asset_file.write("    e" + str(i) + str(j) + ": " + str(e_value).upper()+"\n")
 
 ###############################
 # Write Bone Name Hash
@@ -849,7 +849,7 @@ new_asset_file.write("      dimension: 4\n")
 ###############################
 
 new_asset_file.write("    m_DataSize: "+str(vertex_buffer_size)+"\n")
-new_asset_file.write("    _typelessdata:  ")
+new_asset_file.write("    _typelessdata: ")
 
 
 if normal_buffer_size > position_buffer_size:
@@ -872,7 +872,7 @@ for index in range(vertex_range):
     new_asset_file.write(str(float_to_hex(normal_buffer[new_normal_index_buffer[index]*3+1])))
     new_asset_file.write(str(float_to_hex(normal_buffer[new_normal_index_buffer[index]*3+2])))
     
-    new_asset_file.write("3f0000803f0000000000000000000080bf")
+    new_asset_file.write("0000803f0000000000000000000080bf")
 
 print("Writing Vertex and Normals: "+ Fore.GREEN + "[OK]" +Style.RESET_ALL)
 for index in range(vertex_range):
