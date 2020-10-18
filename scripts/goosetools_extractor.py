@@ -1,6 +1,6 @@
 #GooseTool's Complex Collada Generator
 major=1
-minor=0
+minor=1
 
 import sys
 from colorama import Fore, Back, Style, init
@@ -1243,6 +1243,9 @@ for material_num in range(1):
     collada_file.write("<reflectivity>\n")
     collada_file.write("<float sid=\"specular\">0.5</float>\n")
     collada_file.write("</reflectivity>\n")
+    collada_file.write("<index_of_refraction>\n")
+    collada_file.write("<float sid=\"ior\">1.45</float>\n")
+    collada_file.write("</index_of_refraction>\n")
     collada_file.write("</lambert>\n")
     collada_file.write("</technique>\n")
     collada_file.write("</profile_COMMON>\n")
@@ -1551,7 +1554,7 @@ if asset_type == "goose" or asset_type == "npc":
     collada_bind_pose_array_name="Body_Armature_"+str(asset_name)+"-skin-bind_poses-array"
 
     collada_file.write("<source id=\"" + str(collada_bind_pose_source_id) + "\">\n")
-    collada_file.write("<float_array id=\"" + str(collada_bind_pose_array_name) + "\" count=\"" + str(int(collade_bone_number*16)) + "\">\n")
+    collada_file.write("<float_array id=\"" + str(collada_bind_pose_array_name) + "\" count=\"" + str(int(collade_bone_number*16)) + "\">")
 
 
 
