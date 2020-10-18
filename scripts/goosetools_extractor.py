@@ -1449,7 +1449,7 @@ new_material_flag=0
 
 collada_triangle_vertex_count=index_count
 
-collada_file.write("<triangles material=\"" + str(collada_library_material_id) + "\" count=\""+str(collada_triangle_vertex_count) + "\">\n")
+collada_file.write("<triangles material=\"" + str(collada_library_material_id) + "\" count=\""+str(int(collada_triangle_vertex_count/3)) + "\">\n")
 collada_file.write("<input semantic=\"VERTEX\" source=\"#" + collada_vertex_source_id + "\" offset=\"0\"/>\n")
 collada_file.write("<input semantic=\"NORMAL\" source=\"#" + collada_normal_source_id + "\" offset=\"1\"/>\n")
 collada_file.write("<input semantic=\"COLOR\" source=\"#" + collada_color_source_id + "\" offset=\"2\" set=\"0\"/>\n")
@@ -1584,7 +1584,7 @@ if asset_type == "goose" or asset_type == "npc":
         collade_skin_weight_count+=get_obj_vertex_weight_count(vertex_index,vertex_count,asset_type)
 
     collada_file.write("<source id=\"" + str(collada_skin_weight_source_id) + "\">\n")
-    collada_file.write("<float_array id=\"" + str(collada_skin_weight_array_name) + "\" count=\"" + str(int(collade_skin_weight_count)) + "\">\n")
+    collada_file.write("<float_array id=\"" + str(collada_skin_weight_array_name) + "\" count=\"" + str(int(collade_skin_weight_count)) + "\">")
     
     #Write Weights Here
     for vertex_index in range(vertex_count):
@@ -1613,7 +1613,7 @@ if asset_type == "goose" or asset_type == "npc":
     collada_file.write("<vertex_weights count=\"" + str(vertex_count) + "\">\n")
     collada_file.write("<input semantic=\"JOINT\" source=\"#" + str(collada_skin_joints_id) + "\" offset=\"0\"/>\n")
     collada_file.write("<input semantic=\"WEIGHT\" source=\"#" + str(collada_skin_weight_source_id) + "\" offset=\"1\"/>\n")
-    collada_file.write("<vcount>\n")
+    collada_file.write("<vcount>")
 
           #VCOUNT - NUMBER OF WEIGHTS PER VERTEX - BETWEEN 1 and 4
     for vertex_index in range(vertex_count):
@@ -1622,7 +1622,7 @@ if asset_type == "goose" or asset_type == "npc":
 
 
     collada_file.write("</vcount>\n")
-    collada_file.write("<v>\n")
+    collada_file.write("<v>")
 
 
 
@@ -1635,7 +1635,9 @@ if asset_type == "goose" or asset_type == "npc":
         for skin_weight_index in range(temp_vertex_weight_count):
             #print("DEBUG- TEMP VERTEX WEIGHT: " + str(temp_vertex_weight_count) + " : "  + str(skin_weight_index))         
             collada_file.write(str(int(str((get_obj_vertex_weight(skin_weight_index,vertex_index,vertex_count,asset_type)).split()[0]))-1) + " ")
-            collada_file.write(str(global_vertex_positon_count+skin_weight_index) + " ")
+            collada_file.write(str(global_vertex_positon_count+skin_weight_index))
+            if (vertex_index != (vertex_count-1)) or (skin_weight_index != (temp_vertex_weight_count-1)):
+                collada_file.write(" ")
         global_vertex_positon_count+=int(temp_vertex_weight_count)
     
     collada_file.write("</v>\n")
