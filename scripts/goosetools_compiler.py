@@ -623,24 +623,19 @@ if normal_buffer_size > position_buffer_size:
         new_color_index_buffer[int(v2_normal)]=v2_color
         new_color_index_buffer[int(v3_normal)]=v3_color
 
-       
-
-
-
         byte1 =format(int(v1_normal),"04x")
+        byte2 =format(int(v1_normal),"04x")
+        byte3 =format(int(v1_normal),"04x")
 
-        byte2 =format(int(v2_normal),"04x")
+        byte_1_transform=str(byte1[-2:])+ str(byte1[:2])
+        byte_2_transform=str(byte2[-2:])+ str(byte2[:2])
+        byte_3_transform=str(byte3[-2:])+ str(byte3[:2])
 
-        byte3 =format(int(v3_normal),"04x")
-        print("DEBUG: BYTE1: " + str(byte1) + " BYTE2: " + str(byte2) + " BYTE3: " + str(byte3))
-        new_asset_file.write(str(byte1[:2])+str(byte3[-2:]))
-        new_asset_file.write(str(byte2[:2])+str(byte2[-2:]))
-        new_asset_file.write(str(byte3[:2])+str(byte1[-2:]))
+        #print("DEBUG: BYTE1: " + str(byte1) + " BYTE2: " + str(byte2) + " BYTE3: " + str(byte3))
 
+        temp_string=byte_3_transform+byte_2_transform+byte_1_transform
 
-  
-
-
+        new_asset_file.write(temp_string)
         
         #print("Position Resize: " + str(i) + " of " + str(face_buffer_size))
         
@@ -683,14 +678,18 @@ elif position_buffer_size > normal_buffer_size:
         new_color_index_buffer[int(v1_position)]=v3_color
 
         byte1 =format(int(v1_position),"04x")
-
         byte2 =format(int(v2_position),"04x")
-
         byte3 =format(int(v3_position),"04x")
-        print("DEBUG: BYTE1: " + str(byte1) + " BYTE2: " + str(byte2) + " BYTE3: " + str(byte3))
-        new_asset_file.write(str(byte1[:2])+str(byte3[-2:]))
-        new_asset_file.write(str(byte2[:2])+str(byte2[-2:]))
-        new_asset_file.write(str(byte3[:2])+str(byte1[-2:]))
+
+        byte_1_transform=str(byte1[-2:])+ str(byte1[:2])
+        byte_2_transform=str(byte2[-2:])+ str(byte2[:2])
+        byte_3_transform=str(byte3[-2:])+ str(byte3[:2])
+
+        #print("DEBUG: BYTE1: " + str(byte1) + " BYTE2: " + str(byte2) + " BYTE3: " + str(byte3))
+
+        temp_string=byte_3_transform+byte_2_transform+byte_1_transform
+
+        new_asset_file.write(temp_string)
 
         #print("Normal Resize: " + str(i) + " of " + str(face_buffer_size))
 
@@ -741,18 +740,11 @@ elif position_buffer_size == normal_buffer_size:
         byte_2_transform=str(byte2[-2:])+ str(byte2[:2])
         byte_3_transform=str(byte3[-2:])+ str(byte3[:2])
 
-
-
-
-
         #print("DEBUG: BYTE1: " + str(byte1) + " BYTE2: " + str(byte2) + " BYTE3: " + str(byte3))
 
         temp_string=byte_3_transform+byte_2_transform+byte_1_transform
-        #print("DEBUG STRING: " + str(temp_string))
+
         new_asset_file.write(temp_string)
-        #new_asset_file.write(str(byte3[:2])+str(byte3[-2:]))
-        #new_asset_file.write(str(byte2[:2])+str(byte2[-2:]))
-        #new_asset_file.write(str(byte1[:2])+str(byte1[-2:]))
 
         #print("Normal Resize: " + str(i) + " of " + str(face_buffer_size))
 
