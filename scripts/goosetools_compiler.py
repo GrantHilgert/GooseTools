@@ -10,7 +10,7 @@ import struct
 from string import *
 from datetime import date
 import numpy as np
-
+import subprocess
 #Init Colorama
 init()
 
@@ -191,6 +191,10 @@ global center_z
 center_x=0
 center_y=0
 center_z =0
+
+
+
+
 global extent_x
 global extent_y
 global entent_z
@@ -375,8 +379,60 @@ for line in COLLADA_LINE:
 
 
 
-vertex_count=int(position_buffer_size/3)
-vertex_buffer_size=vertex_count*40 + vertex_count*12 + 12 + vertex_count*32
+
+########################################################################################################################################
+# Process Data
+########################################################################################################################################
+
+
+
+
+#Vertex Buffer Size
+if normal_buffer_size > position_buffer_size:
+    vertex_range=int(normal_buffer_size/3)
+
+elif normal_buffer_size < position_buffer_size:
+    vertex_range=int(position_buffer_size/3)
+
+elif normal_buffer_size == position_buffer_size:
+    vertex_range=int(position_buffer_size/3)
+
+
+vertex_buffer_size=vertex_range*40 + vertex_range*12 + 12 + vertex_range*32
+
+
+
+
+## center and extent data
+
+
+center_x=0.0
+center_y=-2.033516
+center_z =7.290411
+extent_x=13.18078
+extent_y=4.925367
+extent_z=7.290861
+
+if center_x.is_integer():
+    center_x=int(center_x)
+ 
+if center_y.is_integer():
+    center_y=int(center_y)
+
+if center_z.is_integer():
+    center_z=int(center_z)
+
+
+if extent_x.is_integer():
+    extent_x=int(extentr_x)
+ 
+if extent_y.is_integer():
+    extent_y=int(extent_y)
+
+if extent_z.is_integer():
+    extent_z=int(extent_z)
+
+
 ########################################################################################################################################
 # Write .asset file
 ########################################################################################################################################
@@ -400,7 +456,7 @@ new_asset_file.write("    indexCount: "+str(face_buffer_size*3)+"\n")
 new_asset_file.write("    topology: 0\n")
 new_asset_file.write("    baseVertex: 0\n")
 new_asset_file.write("    firstVertex: 0\n")
-new_asset_file.write("    vertexCount: "+str(vertex_count)+"\n")
+new_asset_file.write("    vertexCount: "+str(vertex_range)+"\n")
 new_asset_file.write("    localAABB:\n")
 new_asset_file.write("      m_Center: {x: "+str(center_x)+", y: "+str(center_y)+", z: "+str(center_z)+"}\n")
 new_asset_file.write("      m_Extent: {x: "+str(extent_x)+", y: "+str(extent_y)+", z: "+str(extent_z)+"}\n")
@@ -785,7 +841,7 @@ ugg_vertex_buffer_block_C=""
 
 new_asset_file.write("  m_VertexData:\n")
 new_asset_file.write("    serializedVersion: 2\n")
-new_asset_file.write("    m_VertexCount: "+str(vertex_count)+"\n")
+new_asset_file.write("    m_VertexCount: "+str(vertex_range)+"\n")
 new_asset_file.write("    m_Channels:\n")
 new_asset_file.write("    - stream: 0\n")
 new_asset_file.write("      offset: 0\n")
@@ -852,14 +908,6 @@ new_asset_file.write("    m_DataSize: "+str(vertex_buffer_size)+"\n")
 new_asset_file.write("    _typelessdata: ")
 
 
-if normal_buffer_size > position_buffer_size:
-    vertex_range=int(normal_buffer_size/3)
-
-elif normal_buffer_size < position_buffer_size:
-    vertex_range=int(position_buffer_size/3)
-
-elif normal_buffer_size == position_buffer_size:
-    vertex_range=int(position_buffer_size/3)
 
 for index in range(vertex_range):
 
@@ -1045,11 +1093,19 @@ new_asset_file.write("    path:\n")
 new_asset_file.close()
 
 
+print("Asset Compilation: "+ Fore.GREEN + "[COMPLETE]" +Style.RESET_ALL)
+
+########################################################################################################################################
+# CONVERT TO UNITY ASSET BUNDLE EXTRACTOR DUMP
+########################################################################################################################################
 
 
+python_script="asset_to_UABE.py"
+input_file=str(sys.argv[1].split(".")[0] + ".asset")
 
 
-
+print("STARTING SUBPROCESS: "+ Fore.YELLOW + "["+str(python_script)+"]" +Style.RESET_ALL)
+subprocess.call(["python", python_script, input_file])
 
 
 
